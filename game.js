@@ -99,7 +99,21 @@ export class Game extends Base_Scene {
         this.moveLeft = false;
         this.moveRight = false;
 
+        // positioning of the platform
         this.platformX = 0;
+
+        // positioning of the ball
+        this.ballX = 0;
+        this.ballY = 0;
+
+        // ball movement, abs(x + y) should add up to 1
+        this.ballMovementX = 0;
+        this.ballMovementY = -5;
+
+        // once a collision happens, we use this variable to reset the time to zero
+        this.time_offset = 0;
+
+
     }
 
     // we'll use x to move left and c to move right
@@ -171,13 +185,29 @@ export class Game extends Base_Scene {
         platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
 
         // draw the ball
-        const ball_delta = -5;
+        // const ball_delta = -5;
+        const time_delta = t - this.time_offset;
+
+        // for changing the ball angle after colliding: just use the center of the ball's location for x
+        // once we've confirmed that there's a collision, we send the ball flying at an offset depending on distance from center
 
 
-        ball_transform = ball_transform.times(Mat4.translation(0, t * ball_delta, 0, 1));
+        ball_transform = ball_transform.times(Mat4.translation(this.ballX + (time_delta * this.ballMovementX), this.ballY + (time_delta * this.ballMovementY), 0, 1));
 
-        this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
-        this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
-        
+        if (!this.sphere_to_platform_collision_detection(ball_transform, platform_transform)) {
+            this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
+            this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
+        }
+
+        if (this.sphere_to_platform_collision_detection(ball_transform, platform_transform)) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
+
+            this.ballMovementX = 1;
+            this.ballMovementY = 4;
+
+        }
+
     }
 }
