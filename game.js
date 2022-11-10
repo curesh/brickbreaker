@@ -115,6 +115,8 @@ export class Game extends Base_Scene {
         // once a collision happens, we use this variable to reset the time to zero
         this.time_offset = 0;
 
+        this.sphere_radius = 1;
+        this.platform_radius = 2;
 
     }
 
@@ -147,13 +149,10 @@ export class Game extends Base_Scene {
         const platform_x = platform_transform[0][3];
         const platform_y = platform_transform[1][3];
 
-        // currently testing with platform length of 2 and sphere radius of 1
-        const sphere_radius = 0.5;
-        const platform_radius = 1;
 
-        if (sphere_x - sphere_radius < platform_x + platform_radius ||
-            sphere_x + sphere_radius > platform_x - platform_radius) {
-            if (sphere_y > platform_y && (sphere_y - sphere_radius < platform_y)) {
+        if (sphere_x - this.sphere_radius < platform_x + this.platform_radius &&
+            sphere_x + this.sphere_radius > platform_x - this.platform_radius) {
+            if (sphere_y > platform_y && (sphere_y - this.sphere_radius < platform_y)) {
                 return true;
             }
         }
@@ -211,21 +210,20 @@ export class Game extends Base_Scene {
             this.ballY = ball_transform[1][3];
 
             const platform_center = platform_transform[0][3];
+            
+            // const max_platform_distance = 2;
 
-            // temporarily coded hard value – given spheres of radius .5 and platform radius of 1,
-            // we're detecting a collision furthest when sphere x is 1.5 away from the platform center
-            const max_platform_distance = 2;
+            // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
+            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .2, Math.min(this.platform_radius - .2, this.ballX - platform_center));
 
-            const sphere_dist_from_platform_center = Math.max(-1.8, Math.min(1.8, ball_transform[0][3] - platform_center));
+            // console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
 
-            console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
-
-            if (Math.abs(sphere_dist_from_platform_center) <= max_platform_distance) {
-                this.ballMovementX = (sphere_dist_from_platform_center / max_platform_distance) * this.ballMovementCoefficientSum;
+            if (Math.abs(sphere_dist_from_platform_center) <= this.platform_radius) {
+                this.ballMovementX = (sphere_dist_from_platform_center / this.platform_radius) * this.ballMovementCoefficientSum;
                 this.ballMovementY = Math.abs(this.ballMovementCoefficientSum) - Math.abs(this.ballMovementX);
                 
-                console.log("x: ", this.ballMovementX);
-                console.log("y: ", this.ballMovementY);
+                // console.log("x: ", this.ballMovementX);
+                // console.log("y: ", this.ballMovementY);
             }
 
         }
