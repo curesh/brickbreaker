@@ -148,10 +148,10 @@ export class Game extends Base_Scene {
         const platform_y = platform_transform[1][3];
 
         // currently testing with platform length of 2 and sphere radius of 1
-        const sphere_radius = 0.5;
-        const platform_radius = 1;
+        const sphere_radius = 1;
+        const platform_radius = 2;
 
-        if (sphere_x - sphere_radius < platform_x + platform_radius ||
+        if (sphere_x - sphere_radius < platform_x + platform_radius &&
             sphere_x + sphere_radius > platform_x - platform_radius) {
             if (sphere_y > platform_y && (sphere_y - sphere_radius < platform_y)) {
                 return true;
@@ -218,14 +218,14 @@ export class Game extends Base_Scene {
 
             const sphere_dist_from_platform_center = Math.max(-1.8, Math.min(1.8, ball_transform[0][3] - platform_center));
 
-            console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
+            // console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
 
             if (Math.abs(sphere_dist_from_platform_center) <= max_platform_distance) {
                 this.ballMovementX = (sphere_dist_from_platform_center / max_platform_distance) * this.ballMovementCoefficientSum;
                 this.ballMovementY = Math.abs(this.ballMovementCoefficientSum) - Math.abs(this.ballMovementX);
                 
-                console.log("x: ", this.ballMovementX);
-                console.log("y: ", this.ballMovementY);
+                // console.log("x: ", this.ballMovementX);
+                // console.log("y: ", this.ballMovementY);
             }
 
         }
