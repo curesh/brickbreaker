@@ -120,9 +120,17 @@ export class Game extends Base_Scene {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
-        let model_transform = Mat4.identity();
+        let ball_transform = Mat4.identity();
 
-        this.shapes.ball.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
+        // time since starting given in seconds
+        const t = this.t = program_state.animation_time / 1000;
+
+        // make this value more negative for faster falling
+        const ball_delta = -5;
+
+        ball_transform = ball_transform.times(Mat4.translation(0, t * ball_delta, 0, 1));
+
+        this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
 
         let platform_transform = Mat4.identity();
 
@@ -139,6 +147,5 @@ export class Game extends Base_Scene {
         platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
 
         this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
-        
     }
 }
