@@ -25,10 +25,7 @@ class Cube extends Shape {
 class Cube_Outline extends Shape {
     constructor() {
         super("position", "color");
-        //  TODO (Requirement 5).
-        // When a set of lines is used in graphics, you should think of the list entries as
-        // broken down into pairs; each pair of vertices will be drawn as a line segment.
-        // Note: since the outline is rendered with Basic_shader, you need to redefine the position and color of each vertex
+
     }
 }
 
@@ -74,7 +71,7 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, 10, -30));
+            program_state.set_camera(Mat4.translation(0, -5, -70));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -85,6 +82,24 @@ class Base_Scene extends Scene {
     }
 }
 
+
+
+// Dimensions of the game (only in x and y space)
+// Y : -20 < y < 20
+// X : -10 < x < 10
+// Bricks : 10 < y < 20
+// Bricks : -10 < x < 10
+// Brick dimensions : 1.5 x 1.5
+// Brick count : 50
+// Platform y = -20, -10 < x < 10
+// Platform dimension = 2 x 0.1
+
+const GAME_WIDTH = 20;
+const GAME_LENGTH = 40;
+const ORIGIN = [-10, -20];
+const BRICK_COUNT = 50;
+const BRICK_START_Y = 10;
+const BRICK_DIM = 1.5;
 export class Game extends Base_Scene {
     /**
      * This Scene object can be added to any display canvas.
@@ -96,8 +111,8 @@ export class Game extends Base_Scene {
     constructor() {
         super();
 
-        this.moveLeft = false;
-        this.moveRight = false;
+        this.platformMoveLeft = false;
+        this.platformMoveRight = false;
 
         // positioning of the platform
         this.platformX = 0;
@@ -115,13 +130,16 @@ export class Game extends Base_Scene {
         // once a collision happens, we use this variable to reset the time to zero
         this.time_offset = 0;
 
+        this.sphere_radius = 1;
+        this.platform_radius = 2;
 
+        this.colors = this.createColors();
     }
 
     // we'll use x to move left and c to move right
     make_control_panel() {
-        this.key_triggered_button("Move left", ["x"], () => this.moveLeft = true);
-        this.key_triggered_button("Move right", ["c"], () => this.moveRight = true);
+        this.key_triggered_button("Move left", ["x"], () => this.platformMoveLeft = true);
+        this.key_triggered_button("Move right", ["c"], () => this.platformMoveRight = true);
     }
 
     draw_box(context, program_state, model_transform) {
@@ -133,10 +151,11 @@ export class Game extends Base_Scene {
     }
 
     // TODO (david): make this collision detection algorithm more refined (treats the balls as cubes essentially)
-    sphere_to_platform_collision_detection(sphere_transform, platform_transform) {
+    sphere_to_platform_collision_detection(sphere_transform, platform_transform, side, platform_radius) {
 
         // no collision detected if the ball is on the way up
-        if (this.ballMovementY > 0) {
+        if ((this.ballMovementY > 0 && side === "bottom") ||
+             this.ballMovementY < 0 && side === "top") {
             return false;
         }
 
@@ -146,18 +165,76 @@ export class Game extends Base_Scene {
         const sphere_y = sphere_transform[1][3];
         const platform_x = platform_transform[0][3];
         const platform_y = platform_transform[1][3];
-
-        // currently testing with platform length of 2 and sphere radius of 1
-        const sphere_radius = 0.5;
-        const platform_radius = 1;
-
-        if (sphere_x - sphere_radius < platform_x + platform_radius ||
-            sphere_x + sphere_radius > platform_x - platform_radius) {
-            if (sphere_y > platform_y && (sphere_y - sphere_radius < platform_y)) {
-                return true;
+        if (sphere_x - this.sphere_radius < platform_x + platform_radius &&
+            sphere_x + this.sphere_radius > platform_x - platform_radius) {
+            if (side === "bottom") {
+                if (sphere_y > platform_y && (sphere_y - this.sphere_radius < platform_y)) {
+                    return true;
+                }
+            }
+            else if (side === "top") {
+                if (sphere_y < platform_y && (sphere_y + this.sphere_radius > platform_y)) {
+                    return true;
+                }
             }
         }
         return false;
+    }
+
+    sphere_to_border_collision_detection(sphere_transform, border_transform, side) {
+        if ((this.ballMovementX > 0 && side === "left") ||
+             this.ballMovementX < 0 && side === "right") {
+            return false;
+        }
+        const sphere_x = sphere_transform[0][3];
+        const sphere_y = sphere_transform[1][3];
+        const border_transform_x = border_transform[0][3];
+        const border_transform_y = border_transform[1][3];
+
+        if (sphere_y - this.sphere_radius < border_transform_y + 10 &&
+            sphere_y + this.sphere_radius > border_transform_y - 10) {
+            if (side === "left") {
+                if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
+                    return true;
+                }
+            }
+            else if (side === "right") {
+                if (sphere_x < border_transform_x && (sphere_x + this.sphere_radius > border_transform_x)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    createColors() {
+        let colors = [];
+        let colore = color(Math.random(), Math.random(), Math.random(), 1.0);
+        for(let i = 0; i  < 29; i++) {
+            while(colors.includes(colore)) {
+                colore = color(Math.random(), Math.random(), Math.random(), 1.0);
+            }
+            colors.push(colore);
+        }
+        return colors
+    }
+
+    generate_bricks(context, program_state) {
+        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0], BRICK_START_Y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
+        const green = hex_color("#90EE90");
+        let start_x = ORIGIN[0];
+        let start_y = BRICK_START_Y;
+        let delta_y = 2;
+        let delta_x = 2;
+        let counter = 0;
+        for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
+
+            for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
+                counter += 1;
+                brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
+                this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:this.colors[counter%this.colors.length]}));
+            }
+        }
 
     }
 
@@ -165,8 +242,30 @@ export class Game extends Base_Scene {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
-        let ball_transform = Mat4.identity();
+        const yellow = hex_color("#FFFF00");
 
+        // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
+
+        // draw the borders for the game
+        let left_border_transform = Mat4.identity();
+        left_border_transform = left_border_transform.times(Mat4.translation(- 20, -10, 0));
+        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 10, 1));
+
+        let top_border_transform = Mat4.identity();
+        top_border_transform = top_border_transform.times(Mat4.translation(0, 0, 0));
+        top_border_transform = top_border_transform.times(Mat4.scale(20, 0.1, 1));
+
+        let right_border_transform = Mat4.identity();
+        right_border_transform = right_border_transform.times(Mat4.translation(20, -10, 0));
+        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 10, 1));
+
+
+        this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, top_border_transform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, right_border_transform, this.materials.plastic.override({color: yellow}));
+
+        let ball_transform = Mat4.identity();
+        this.generate_bricks(context, program_state);
         // time since starting given in seconds
         const t = this.t = program_state.animation_time / 1000;
 
@@ -179,13 +278,13 @@ export class Game extends Base_Scene {
 
         // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
 
-        if (this.moveLeft) {
+        if (this.platformMoveLeft) {
             this.platformX -= 1;
-            this.moveLeft = false;
+            this.platformMoveLeft = false;
         }
-        else if (this.moveRight) {
+        else if (this.platformMoveRight) {
             this.platformX += 1
-            this.moveRight = false;
+            this.platformMoveRight = false;
         }
 
         platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
@@ -205,29 +304,47 @@ export class Game extends Base_Scene {
         this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
 
 
-        if (this.sphere_to_platform_collision_detection(ball_transform, platform_transform)) {
+        if (this.sphere_to_platform_collision_detection(ball_transform, platform_transform, "bottom", this.platform_radius)) {
             this.time_offset = t;
             this.ballX = ball_transform[0][3];
             this.ballY = ball_transform[1][3];
 
             const platform_center = platform_transform[0][3];
 
-            // temporarily coded hard value – given spheres of radius .5 and platform radius of 1,
-            // we're detecting a collision furthest when sphere x is 1.5 away from the platform center
-            const max_platform_distance = 2;
+            // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
+            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .2, Math.min(this.platform_radius - .2, this.ballX - platform_center));
 
-            const sphere_dist_from_platform_center = Math.max(-1.8, Math.min(1.8, ball_transform[0][3] - platform_center));
+            // console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
 
-            console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
-
-            if (Math.abs(sphere_dist_from_platform_center) <= max_platform_distance) {
-                this.ballMovementX = (sphere_dist_from_platform_center / max_platform_distance) * this.ballMovementCoefficientSum;
+            if (Math.abs(sphere_dist_from_platform_center) <= this.platform_radius) {
+                this.ballMovementX = (sphere_dist_from_platform_center / this.platform_radius) * this.ballMovementCoefficientSum;
                 this.ballMovementY = Math.abs(this.ballMovementCoefficientSum) - Math.abs(this.ballMovementX);
                 
-                console.log("x: ", this.ballMovementX);
-                console.log("y: ", this.ballMovementY);
+                // console.log("x: ", this.ballMovementX);
+                // console.log("y: ", this.ballMovementY);
             }
+        }
 
+        if (this.sphere_to_border_collision_detection(ball_transform, left_border_transform, "left")) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
+
+            this.ballMovementX *= -1;
+        }
+        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 20)) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
+
+            this.ballMovementY *= -1;
+        }
+        else if (this.sphere_to_border_collision_detection(ball_transform, right_border_transform, "right")) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
+
+            this.ballMovementX *= -1;
         }
 
     }
