@@ -116,6 +116,30 @@ export class Game extends Base_Scene {
         return model_transform;
     }
 
+    // TODO (david): make this collision detection algorithm more refined (treats the balls as cubes essentially)
+    sphere_to_platform_collision_detection(sphere_transform, platform_transform) {
+
+        // detects a collision if the x value of the sphere is within the platform range AND the y value of the sphere is within platform range
+
+        const sphere_x = sphere_transform[0][3];
+        const sphere_y = sphere_transform[1][3];
+        const platform_x = platform_transform[0][3];
+        const platform_y = platform_transform[1][3];
+
+        // currently testing with platform length of 2 and sphere radius of 1
+        const sphere_radius = 0.5;
+        const platform_radius = 1;
+
+        if (sphere_x - sphere_radius < platform_x + platform_radius ||
+            sphere_x + sphere_radius > platform_x - platform_radius) {
+            if (sphere_y > platform_y && (sphere_y - sphere_radius < platform_y)) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
@@ -126,13 +150,13 @@ export class Game extends Base_Scene {
         const t = this.t = program_state.animation_time / 1000;
 
         // make this value more negative for faster falling
-        const ball_delta = -5;
 
-        ball_transform = ball_transform.times(Mat4.translation(0, t * ball_delta, 0, 1));
 
-        this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
+        // this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
 
         let platform_transform = Mat4.identity();
+
+        // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
 
         if (this.moveLeft) {
             this.platformX -= 1;
@@ -146,6 +170,14 @@ export class Game extends Base_Scene {
         platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
         platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
 
+        // draw the ball
+        const ball_delta = -5;
+
+
+        ball_transform = ball_transform.times(Mat4.translation(0, t * ball_delta, 0, 1));
+
+        this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
         this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
+        
     }
 }
