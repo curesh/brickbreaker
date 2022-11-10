@@ -53,6 +53,8 @@ class Base_Scene extends Scene {
         this.shapes = {
             'cube': new Cube(),
             'outline': new Cube_Outline(),
+            'tmp_cube': new defs.Cube(),
+            'ball': new defs.Subdivision_Sphere(4),
         };
 
         // *** Materials
@@ -72,7 +74,7 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(5, -10, -30));
+            program_state.set_camera(Mat4.translation(0, 10, -30));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -83,7 +85,7 @@ class Base_Scene extends Scene {
     }
 }
 
-export class Assignment2 extends Base_Scene {
+export class Game extends Base_Scene {
     /**
      * This Scene object can be added to any display canvas.
      * We isolate that code so it can be experimented with on its own.
@@ -119,10 +121,16 @@ export class Assignment2 extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
+        const green = hex_color("#90EE90");
         let model_transform = Mat4.identity();
 
         // Example for drawing a cube, you can remove this line if needed
-        this.shapes.cube.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
+        this.shapes.ball.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
         // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
+
+        let platform_transform = Mat4.identity();
+        platform_transform = platform_transform.times(Mat4.translation(0, -20, 0));
+        platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
+        this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
     }
 }
