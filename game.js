@@ -97,10 +97,9 @@ class Base_Scene extends Scene {
 const GAME_WIDTH = 20;
 const GAME_LENGTH = 40;
 const ORIGIN = [-10, -20];
-const BRICK_WIDTH = 1.5;
-const BRICK_LENGTH = 1.5;
 const BRICK_COUNT = 50;
-
+const BRICK_START_Y = 10;
+const BRICK_DIM = 1.5;
 export class Game extends Base_Scene {
     /**
      * This Scene object can be added to any display canvas.
@@ -134,6 +133,7 @@ export class Game extends Base_Scene {
         this.sphere_radius = 1;
         this.platform_radius = 2;
 
+        this.colors = this.createColors();
     }
 
     // we'll use x to move left and c to move right
@@ -176,13 +176,34 @@ export class Game extends Base_Scene {
 
     }
 
-    generate_bricks(context, program_state) {
-        let brick_transform = Mat4.identity().times(Mat4.translation(-10, 20, 0)).times(Mat4.scale(1.5, 1.5, 1.5));
-        const green = hex_color("#90EE90");
+    createColors() {
+        let colors = [];
+        let colore = color(Math.random(), Math.random(), Math.random(), 1.0);
+        for(let i = 0; i  < 29; i++) {
+            while(colors.includes(colore)) {
+                colore = color(Math.random(), Math.random(), Math.random(), 1.0);
+            }
+            colors.push(colore);
+        }
+        return colors
+    }
 
-        this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:green}));
-        brick_transform = brick_transform.times(Mat4.scale(2/3,2/3,2/3)).times(Mat4.translation(4,0,0)).times(Mat4.scale(1.5, 1.5, 1.5));
-        this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:green}));
+    generate_bricks(context, program_state) {
+        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0], BRICK_START_Y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
+        const green = hex_color("#90EE90");
+        let start_x = ORIGIN[0];
+        let start_y = BRICK_START_Y;
+        let delta_y = 2;
+        let delta_x = 2;
+        let counter = 0;
+        for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
+
+            for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
+                counter += 1;
+                brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
+                this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:this.colors[counter%this.colors.length]}));
+            }
+        }
 
     }
 
