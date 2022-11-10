@@ -137,10 +137,11 @@ export class Game extends Base_Scene {
     }
 
     // TODO (david): make this collision detection algorithm more refined (treats the balls as cubes essentially)
-    sphere_to_platform_collision_detection(sphere_transform, platform_transform) {
+    sphere_to_platform_collision_detection(sphere_transform, platform_transform, side, platform_radius) {
 
         // no collision detected if the ball is on the way up
-        if (this.ballMovementY > 0) {
+        if ((this.ballMovementY > 0 && side === "bottom") ||
+             this.ballMovementY < 0 && side === "top") {
             return false;
         }
 
@@ -150,12 +151,17 @@ export class Game extends Base_Scene {
         const sphere_y = sphere_transform[1][3];
         const platform_x = platform_transform[0][3];
         const platform_y = platform_transform[1][3];
-
-
-        if (sphere_x - this.sphere_radius < platform_x + this.platform_radius &&
-            sphere_x + this.sphere_radius > platform_x - this.platform_radius) {
-            if (sphere_y > platform_y && (sphere_y - this.sphere_radius < platform_y)) {
-                return true;
+        if (sphere_x - this.sphere_radius < platform_x + platform_radius &&
+            sphere_x + this.sphere_radius > platform_x - platform_radius) {
+            if (side === "bottom") {
+                if (sphere_y > platform_y && (sphere_y - this.sphere_radius < platform_y)) {
+                    return true;
+                }
+            }
+            else if (side === "top") {
+                if (sphere_y < platform_y && (sphere_y + this.sphere_radius > platform_y)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -173,8 +179,15 @@ export class Game extends Base_Scene {
 
         if (sphere_y - this.sphere_radius < border_transform_y + 10 &&
             sphere_y + this.sphere_radius > border_transform_y - 10) {
-            if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
-                return true;
+            if (side === "left") {
+                if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
+                    return true;
+                }
+            }
+            else if (side === "right") {
+                if (sphere_x < border_transform_x && (sphere_x + this.sphere_radius > border_transform_x)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -246,7 +259,7 @@ export class Game extends Base_Scene {
         this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
 
 
-        if (this.sphere_to_platform_collision_detection(ball_transform, platform_transform)) {
+        if (this.sphere_to_platform_collision_detection(ball_transform, platform_transform, "bottom", this.platform_radius)) {
             this.time_offset = t;
             this.ballX = ball_transform[0][3];
             this.ballY = ball_transform[1][3];
@@ -274,8 +287,12 @@ export class Game extends Base_Scene {
 
             this.ballMovementX *= -1;
         }
-        else if (this.sphere_to_border_collision_detection(ball_transform, top_border_transform)) {
-            console.log("hit the top");
+        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 20)) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
+
+            this.ballMovementY *= -1;
         }
         else if (this.sphere_to_border_collision_detection(ball_transform, right_border_transform, "right")) {
             this.time_offset = t;
