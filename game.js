@@ -96,8 +96,8 @@ export class Game extends Base_Scene {
     constructor() {
         super();
 
-        this.moveLeft = false;
-        this.moveRight = false;
+        this.platformMoveLeft = false;
+        this.platformMoveRight = false;
 
         // positioning of the platform
         this.platformX = 0;
@@ -118,12 +118,14 @@ export class Game extends Base_Scene {
         this.sphere_radius = 1;
         this.platform_radius = 2;
 
+
+
     }
 
     // we'll use x to move left and c to move right
     make_control_panel() {
-        this.key_triggered_button("Move left", ["x"], () => this.moveLeft = true);
-        this.key_triggered_button("Move right", ["c"], () => this.moveRight = true);
+        this.key_triggered_button("Move left", ["x"], () => this.platformMoveLeft = true);
+        this.key_triggered_button("Move right", ["c"], () => this.platformMoveRight = true);
     }
 
     draw_box(context, program_state, model_transform) {
@@ -164,6 +166,26 @@ export class Game extends Base_Scene {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
+        const yellow = hex_color("#FFFF00");
+
+        // draw the borders for the game
+        let left_border_transform = Mat4.identity();
+        left_border_transform = left_border_transform.times(Mat4.translation(- 20, -10, 0));
+        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 10, 1));
+
+        let top_border_transform = Mat4.identity();
+        top_border_transform = top_border_transform.times(Mat4.translation(0, 0, 0));
+        top_border_transform = top_border_transform.times(Mat4.scale(20, 0.1, 1));
+
+        let right_border_transform = Mat4.identity();
+        right_border_transform = right_border_transform.times(Mat4.translation(20, -10, 0));
+        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 10, 1));
+
+
+        this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, top_border_transform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, right_border_transform, this.materials.plastic.override({color: yellow}));
+
         let ball_transform = Mat4.identity();
 
         // time since starting given in seconds
@@ -178,13 +200,13 @@ export class Game extends Base_Scene {
 
         // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
 
-        if (this.moveLeft) {
+        if (this.platformMoveLeft) {
             this.platformX -= 1;
-            this.moveLeft = false;
+            this.platformMoveLeft = false;
         }
-        else if (this.moveRight) {
+        else if (this.platformMoveRight) {
             this.platformX += 1
-            this.moveRight = false;
+            this.platformMoveRight = false;
         }
 
         platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
@@ -210,8 +232,6 @@ export class Game extends Base_Scene {
             this.ballY = ball_transform[1][3];
 
             const platform_center = platform_transform[0][3];
-            
-            // const max_platform_distance = 2;
 
             // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
             const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .2, Math.min(this.platform_radius - .2, this.ballX - platform_center));
@@ -225,8 +245,9 @@ export class Game extends Base_Scene {
                 // console.log("x: ", this.ballMovementX);
                 // console.log("y: ", this.ballMovementY);
             }
-
         }
+
+
 
     }
 }
