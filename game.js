@@ -25,10 +25,7 @@ class Cube extends Shape {
 class Cube_Outline extends Shape {
     constructor() {
         super("position", "color");
-        //  TODO (Requirement 5).
-        // When a set of lines is used in graphics, you should think of the list entries as
-        // broken down into pairs; each pair of vertices will be drawn as a line segment.
-        // Note: since the outline is rendered with Basic_shader, you need to redefine the position and color of each vertex
+
     }
 }
 
@@ -74,7 +71,7 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, 10, -30));
+            program_state.set_camera(Mat4.translation(0, -5, -70));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -84,6 +81,25 @@ class Base_Scene extends Scene {
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
     }
 }
+
+
+
+// Dimensions of the game (only in x and y space)
+// Y : -20 < y < 20
+// X : -10 < x < 10
+// Bricks : 10 < y < 20
+// Bricks : -10 < x < 10
+// Brick dimensions : 1.5 x 1.5
+// Brick count : 50
+// Platform y = -20, -10 < x < 10
+// Platform dimension = 2 x 0.1
+
+const GAME_WIDTH = 20;
+const GAME_LENGTH = 40;
+const ORIGIN = [-10, -20];
+const BRICK_WIDTH = 1.5;
+const BRICK_LENGTH = 1.5;
+const BRICK_COUNT = 50;
 
 export class Game extends Base_Scene {
     /**
@@ -115,6 +131,8 @@ export class Game extends Base_Scene {
         // once a collision happens, we use this variable to reset the time to zero
         this.time_offset = 0;
 
+        this.sphere_radius = 1;
+        this.platform_radius = 2;
 
     }
 
@@ -147,17 +165,24 @@ export class Game extends Base_Scene {
         const platform_x = platform_transform[0][3];
         const platform_y = platform_transform[1][3];
 
-        // currently testing with platform length of 2 and sphere radius of 1
-        const sphere_radius = 0.5;
-        const platform_radius = 1;
 
-        if (sphere_x - sphere_radius < platform_x + platform_radius ||
-            sphere_x + sphere_radius > platform_x - platform_radius) {
-            if (sphere_y > platform_y && (sphere_y - sphere_radius < platform_y)) {
+        if (sphere_x - this.sphere_radius < platform_x + this.platform_radius &&
+            sphere_x + this.sphere_radius > platform_x - this.platform_radius) {
+            if (sphere_y > platform_y && (sphere_y - this.sphere_radius < platform_y)) {
                 return true;
             }
         }
         return false;
+
+    }
+
+    generate_bricks(context, program_state) {
+        let brick_transform = Mat4.identity().times(Mat4.translation(-10, 20, 0)).times(Mat4.scale(1.5, 1.5, 1.5));
+        const green = hex_color("#90EE90");
+
+        this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:green}));
+        brick_transform = brick_transform.times(Mat4.scale(2/3,2/3,2/3)).times(Mat4.translation(4,0,0)).times(Mat4.scale(1.5, 1.5, 1.5));
+        this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:green}));
 
     }
 
@@ -166,7 +191,7 @@ export class Game extends Base_Scene {
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
         let ball_transform = Mat4.identity();
-
+        this.generate_bricks(context, program_state);
         // time since starting given in seconds
         const t = this.t = program_state.animation_time / 1000;
 
@@ -211,21 +236,20 @@ export class Game extends Base_Scene {
             this.ballY = ball_transform[1][3];
 
             const platform_center = platform_transform[0][3];
+            
+            // const max_platform_distance = 2;
 
-            // temporarily coded hard value – given spheres of radius .5 and platform radius of 1,
-            // we're detecting a collision furthest when sphere x is 1.5 away from the platform center
-            const max_platform_distance = 2;
+            // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
+            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .2, Math.min(this.platform_radius - .2, this.ballX - platform_center));
 
-            const sphere_dist_from_platform_center = Math.max(-1.8, Math.min(1.8, ball_transform[0][3] - platform_center));
+            // console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
 
-            console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
-
-            if (Math.abs(sphere_dist_from_platform_center) <= max_platform_distance) {
-                this.ballMovementX = (sphere_dist_from_platform_center / max_platform_distance) * this.ballMovementCoefficientSum;
+            if (Math.abs(sphere_dist_from_platform_center) <= this.platform_radius) {
+                this.ballMovementX = (sphere_dist_from_platform_center / this.platform_radius) * this.ballMovementCoefficientSum;
                 this.ballMovementY = Math.abs(this.ballMovementCoefficientSum) - Math.abs(this.ballMovementX);
                 
-                console.log("x: ", this.ballMovementX);
-                console.log("y: ", this.ballMovementY);
+                // console.log("x: ", this.ballMovementX);
+                // console.log("y: ", this.ballMovementY);
             }
 
         }
