@@ -25,10 +25,7 @@ class Cube extends Shape {
 class Cube_Outline extends Shape {
     constructor() {
         super("position", "color");
-        //  TODO (Requirement 5).
-        // When a set of lines is used in graphics, you should think of the list entries as
-        // broken down into pairs; each pair of vertices will be drawn as a line segment.
-        // Note: since the outline is rendered with Basic_shader, you need to redefine the position and color of each vertex
+
     }
 }
 
@@ -74,7 +71,7 @@ class Base_Scene extends Scene {
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // Define the global camera and projection matrices, which are stored in program_state.
-            program_state.set_camera(Mat4.translation(0, 10, -30));
+            program_state.set_camera(Mat4.translation(0, -5, -70));
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, 1, 100);
@@ -85,6 +82,24 @@ class Base_Scene extends Scene {
     }
 }
 
+
+
+// Dimensions of the game (only in x and y space)
+// Y : -20 < y < 20
+// X : -10 < x < 10
+// Bricks : 10 < y < 20
+// Bricks : -10 < x < 10
+// Brick dimensions : 1.5 x 1.5
+// Brick count : 50
+// Platform y = -20, -10 < x < 10
+// Platform dimension = 2 x 0.1
+
+const GAME_WIDTH = 20;
+const GAME_LENGTH = 40;
+const ORIGIN = [-10, -20];
+const BRICK_COUNT = 50;
+const BRICK_START_Y = 10;
+const BRICK_DIM = 1.5;
 export class Game extends Base_Scene {
     /**
      * This Scene object can be added to any display canvas.
@@ -118,6 +133,7 @@ export class Game extends Base_Scene {
         this.sphere_radius = 1;
         this.platform_radius = 2;
 
+        this.colors = this.createColors();
     }
 
     // we'll use x to move left and c to move right
@@ -160,12 +176,43 @@ export class Game extends Base_Scene {
 
     }
 
+    createColors() {
+        let colors = [];
+        let colore = color(Math.random(), Math.random(), Math.random(), 1.0);
+        for(let i = 0; i  < 29; i++) {
+            while(colors.includes(colore)) {
+                colore = color(Math.random(), Math.random(), Math.random(), 1.0);
+            }
+            colors.push(colore);
+        }
+        return colors
+    }
+
+    generate_bricks(context, program_state) {
+        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0], BRICK_START_Y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
+        const green = hex_color("#90EE90");
+        let start_x = ORIGIN[0];
+        let start_y = BRICK_START_Y;
+        let delta_y = 2;
+        let delta_x = 2;
+        let counter = 0;
+        for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
+
+            for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
+                counter += 1;
+                brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
+                this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:this.colors[counter%this.colors.length]}));
+            }
+        }
+
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
         let ball_transform = Mat4.identity();
-
+        this.generate_bricks(context, program_state);
         // time since starting given in seconds
         const t = this.t = program_state.animation_time / 1000;
 
