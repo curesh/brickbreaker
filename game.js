@@ -159,7 +159,25 @@ export class Game extends Base_Scene {
             }
         }
         return false;
+    }
 
+    sphere_to_border_collision_detection(sphere_transform, border_transform, side) {
+        if ((this.ballMovementX > 0 && side === "left") ||
+             this.ballMovementX < 0 && side === "right") {
+            return false;
+        }
+        const sphere_x = sphere_transform[0][3];
+        const sphere_y = sphere_transform[1][3];
+        const border_transform_x = border_transform[0][3];
+        const border_transform_y = border_transform[1][3];
+
+        if (sphere_y - this.sphere_radius < border_transform_y + 10 &&
+            sphere_y + this.sphere_radius > border_transform_y - 10) {
+            if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     display(context, program_state) {
@@ -167,6 +185,8 @@ export class Game extends Base_Scene {
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
         const yellow = hex_color("#FFFF00");
+
+        // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
 
         // draw the borders for the game
         let left_border_transform = Mat4.identity();
@@ -247,7 +267,23 @@ export class Game extends Base_Scene {
             }
         }
 
+        if (this.sphere_to_border_collision_detection(ball_transform, left_border_transform, "left")) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
 
+            this.ballMovementX *= -1;
+        }
+        else if (this.sphere_to_border_collision_detection(ball_transform, top_border_transform)) {
+            console.log("hit the top");
+        }
+        else if (this.sphere_to_border_collision_detection(ball_transform, right_border_transform, "right")) {
+            this.time_offset = t;
+            this.ballX = ball_transform[0][3];
+            this.ballY = ball_transform[1][3];
+
+            this.ballMovementX *= -1;
+        }
 
     }
 }
