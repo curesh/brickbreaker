@@ -92,22 +92,20 @@ export class Game extends Base_Scene {
      * This gives you a very small code sandbox for editing a simple scene, and for
      * experimenting with matrix transformations.
      */
-    set_colors() {
-        // TODO:  Create a class member variable to store your cube's colors.
-        // Hint:  You might need to create a member variable at somewhere to store the colors, using `this`.
-        // Hint2: You can consider add a constructor for class Assignment2, or add member variables in Base_Scene's constructor.
+
+    constructor() {
+        super();
+
+        this.moveLeft = false;
+        this.moveRight = false;
+
+        this.platformX = 0;
     }
 
+    // we'll use x to move left and c to move right
     make_control_panel() {
-        // Draw the scene's buttons, setup their actions and keyboard shortcuts, and monitor live measurements.
-        this.key_triggered_button("Change Colors", ["c"], this.set_colors);
-        // Add a button for controlling the scene.
-        this.key_triggered_button("Outline", ["o"], () => {
-            // TODO:  Requirement 5b:  Set a flag here that will toggle your outline on and off
-        });
-        this.key_triggered_button("Sit still", ["m"], () => {
-            // TODO:  Requirement 3d:  Set a flag here that will toggle your swaying motion on and off.
-        });
+        this.key_triggered_button("Move left", ["x"], () => this.moveLeft = true);
+        this.key_triggered_button("Move right", ["c"], () => this.moveRight = true);
     }
 
     draw_box(context, program_state, model_transform) {
@@ -124,13 +122,23 @@ export class Game extends Base_Scene {
         const green = hex_color("#90EE90");
         let model_transform = Mat4.identity();
 
-        // Example for drawing a cube, you can remove this line if needed
         this.shapes.ball.draw(context, program_state, model_transform, this.materials.plastic.override({color:blue}));
-        // TODO:  Draw your entire scene here.  Use this.draw_box( graphics_state, model_transform ) to call your helper.
 
         let platform_transform = Mat4.identity();
-        platform_transform = platform_transform.times(Mat4.translation(0, -20, 0));
+
+        if (this.moveLeft) {
+            this.platformX -= 1;
+            this.moveLeft = false;
+        }
+        else if (this.moveRight) {
+            this.platformX += 1
+            this.moveRight = false;
+        }
+
+        platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
         platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
+
         this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
+        
     }
 }
