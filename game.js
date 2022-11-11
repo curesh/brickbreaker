@@ -119,11 +119,10 @@ class Block {
 // Platform y = -20, -10 < x < 10
 // Platform dimension = 2 x 0.1
 
-const GAME_WIDTH = 20;
-const GAME_LENGTH = 40;
-const ORIGIN = [-10, -20];
-const BRICK_COUNT = 50;
-const BRICK_START_Y = 10;
+const ORIGIN = [-45, 10];
+const BRICK_ROWS = 6;
+const BRICK_COLUMNS = 27;
+const BRICK_COUNT = BRICK_ROWS * BRICK_COLUMNS;
 const BRICK_DIM = 1.5;
 export class Game extends Base_Scene {
     /**
@@ -257,16 +256,17 @@ export class Game extends Base_Scene {
     }
 
     generate_bricks(context, program_state) {
-        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0], BRICK_START_Y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
         let start_x = ORIGIN[0];
-        let start_y = BRICK_START_Y;
+        let start_y = ORIGIN[1];
         let delta_y = 2;
         let delta_x = 2;
         let counter = 0;
-        for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
+        let brick_transform = Mat4.identity().times(Mat4.translation(start_x, start_y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
 
-            for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
-                brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
+        for (let i = 0; i < BRICK_ROWS; i += 1) {
+
+            for (let j = 0; j < BRICK_COLUMNS; j += 1) {
+                brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0] + j * (BRICK_DIM + delta_x), ORIGIN[1] + i * (BRICK_DIM + delta_y), 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
 
                 let block = this.block_array[counter];
                 block.update_block_transformation(brick_transform);
