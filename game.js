@@ -145,17 +145,17 @@ export class Game extends Base_Scene {
         this.ballX = 0;
         this.ballY = 0;
 
-        this.ballMovementCoefficientSum = 5;
+        this.ballMovementCoefficientSum = 25;
 
         // ball movement, abs(x + y) should add up to ballMovementCoefficientSum
         this.ballMovementX = 0;
-        this.ballMovementY = -5;
+        this.ballMovementY = -25;
 
         // once a collision happens, we use this variable to reset the time to zero
         this.time_offset = 0;
 
         this.sphere_radius = 1;
-        this.platform_radius = 2;
+        this.platform_radius = 7;
 
         this.colors = this.createColors();
 
@@ -347,7 +347,7 @@ export class Game extends Base_Scene {
         }
 
         platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
-        platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
+        platform_transform = platform_transform.times(Mat4.scale(this.platform_radius, .1, 1));
 
         // draw the ball
         // const ball_delta = -5;
