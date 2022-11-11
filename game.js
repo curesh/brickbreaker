@@ -145,11 +145,11 @@ export class Game extends Base_Scene {
         this.ballX = 0;
         this.ballY = 0;
 
-        this.ballMovementCoefficientSum = 25;
+        this.ballMovementCoefficientSum = 50;
 
         // ball movement, abs(x + y) should add up to ballMovementCoefficientSum
         this.ballMovementX = 0;
-        this.ballMovementY = -25;
+        this.ballMovementY = -50;
 
         // once a collision happens, we use this variable to reset the time to zero
         this.time_offset = 0;
@@ -157,7 +157,7 @@ export class Game extends Base_Scene {
         this.sphere_radius = 1;
         this.platform_radius = 7;
 
-        this.side_border_length = 50;
+        this.side_border_length = 54;
 
         this.colors = this.createColors();
 
@@ -340,11 +340,11 @@ export class Game extends Base_Scene {
         // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
 
         if (this.platformMoveLeft) {
-            this.platformX -= 1;
+            this.platformX -= 2;
             this.platformMoveLeft = false;
         }
         else if (this.platformMoveRight) {
-            this.platformX += 1
+            this.platformX += 2;
             this.platformMoveRight = false;
         }
 
@@ -393,7 +393,7 @@ export class Game extends Base_Scene {
 
             this.ballMovementX *= -1;
         }
-        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 32)) {
+        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 50)) {
             this.time_offset = t;
             this.ballX = ball_transform[0][3];
             this.ballY = ball_transform[1][3];
