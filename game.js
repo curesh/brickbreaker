@@ -266,7 +266,6 @@ export class Game extends Base_Scene {
         for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
 
             for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
-                counter += 1;
                 brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
 
                 let block = this.block_array[counter];
@@ -292,6 +291,8 @@ export class Game extends Base_Scene {
                 else {
                     // error lol
                 }
+
+                counter += 1;
             }
         }
     }
