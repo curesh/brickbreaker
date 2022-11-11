@@ -82,7 +82,32 @@ class Base_Scene extends Scene {
     }
 }
 
+const Brick_Type = {
+    None: 0,
+    Glass: 1,
+    Brick: 2,
+    Steel: 3
+}
 
+class Block {
+
+    constructor() {
+        this.block_type = Math.floor(Math.random() * 4)
+        this.block_transformation = null;
+    }
+
+    get_block_type() {
+        return this.block_type;
+    }
+
+    update_block_transformation(block_transformation) {
+        this.block_transformation = block_transformation;
+    }
+
+    get_block_transformation() {
+        return this.block_transformation;
+    }
+}
 
 // Dimensions of the game (only in x and y space)
 // Y : -20 < y < 20
@@ -134,6 +159,11 @@ export class Game extends Base_Scene {
         this.platform_radius = 2;
 
         this.colors = this.createColors();
+
+        this.block_array = [];
+        for (let i = 0; i < BRICK_COUNT; i++) {
+            this.block_array.push(new Block());
+        }
     }
 
     // we'll use x to move left and c to move right
@@ -207,6 +237,13 @@ export class Game extends Base_Scene {
         return false;
     }
 
+    sphere_to_block_collision_detection(sphere_transform, block_transform) {
+        const sphere_x = sphere_transform[0][3];
+        const sphere_y = sphere_transform[1][3];
+
+        return true;
+    }
+
     createColors() {
         let colors = [];
         let colore = color(Math.random(), Math.random(), Math.random(), 1.0);
@@ -221,7 +258,6 @@ export class Game extends Base_Scene {
 
     generate_bricks(context, program_state) {
         let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0], BRICK_START_Y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
-        const green = hex_color("#90EE90");
         let start_x = ORIGIN[0];
         let start_y = BRICK_START_Y;
         let delta_y = 2;
@@ -230,12 +266,35 @@ export class Game extends Base_Scene {
         for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
 
             for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
-                counter += 1;
                 brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
-                this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color:this.colors[counter%this.colors.length]}));
+
+                let block = this.block_array[counter];
+                block.update_block_transformation(brick_transform);
+
+                // use block_type cases to determine what material to draw
+                let block_type = block.get_block_type();
+                if (block_type === Brick_Type.None) {
+                    // draw nothing
+                }
+                else if (block_type === Brick_Type.Glass) {
+                    // TODO: (tina) figure out how to draw glass material
+                    this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color: hex_color('#FFFFFF')}));
+                }
+                else if (block_type === Brick_Type.Brick) {
+                    // TODO: brick material
+                    this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color: hex_color('#964B00')}));
+                }
+                else if (block_type === Brick_Type.Steel) {
+                    // TODO: steel material
+                    this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color: hex_color('#808080')}));
+                }
+                else {
+                    // error lol
+                }
+
+                counter += 1;
             }
         }
-
     }
 
     display(context, program_state) {
@@ -347,5 +406,11 @@ export class Game extends Base_Scene {
             this.ballMovementX *= -1;
         }
 
+        // check for collision with every single block
+        for (let i = 0; i < this.block_array.length; i++) {
+            if (this.sphere_to_block_collision_detection(ball_transform, this.block_array[i].get_block_transformation())) {
+                // TODO
+            }
+        }
     }
 }
