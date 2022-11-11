@@ -119,11 +119,10 @@ class Block {
 // Platform y = -20, -10 < x < 10
 // Platform dimension = 2 x 0.1
 
-const GAME_WIDTH = 20;
-const GAME_LENGTH = 40;
-const ORIGIN = [-10, -20];
-const BRICK_COUNT = 50;
-const BRICK_START_Y = 10;
+const ORIGIN = [-45, 10];
+const BRICK_ROWS = 6;
+const BRICK_COLUMNS = 27;
+const BRICK_COUNT = BRICK_ROWS * BRICK_COLUMNS;
 const BRICK_DIM = 1.5;
 export class Game extends Base_Scene {
     /**
@@ -146,17 +145,19 @@ export class Game extends Base_Scene {
         this.ballX = 0;
         this.ballY = 0;
 
-        this.ballMovementCoefficientSum = 5;
+        this.ballMovementCoefficientSum = 50;
 
         // ball movement, abs(x + y) should add up to ballMovementCoefficientSum
         this.ballMovementX = 0;
-        this.ballMovementY = -5;
+        this.ballMovementY = -50;
 
         // once a collision happens, we use this variable to reset the time to zero
         this.time_offset = 0;
 
         this.sphere_radius = 1;
-        this.platform_radius = 2;
+        this.platform_radius = 7;
+
+        this.side_border_length = 54;
 
         this.colors = this.createColors();
 
@@ -221,8 +222,8 @@ export class Game extends Base_Scene {
         const border_transform_x = border_transform[0][3];
         const border_transform_y = border_transform[1][3];
 
-        if (sphere_y - this.sphere_radius < border_transform_y + 10 &&
-            sphere_y + this.sphere_radius > border_transform_y - 10) {
+        if (sphere_y - this.sphere_radius < border_transform_y + this.side_border_length/2 &&
+            sphere_y + this.sphere_radius > border_transform_y - this.side_border_length/2) {
             if (side === "left") {
                 if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
                     return true;
@@ -257,16 +258,17 @@ export class Game extends Base_Scene {
     }
 
     generate_bricks(context, program_state) {
-        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0], BRICK_START_Y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
         let start_x = ORIGIN[0];
-        let start_y = BRICK_START_Y;
+        let start_y = ORIGIN[1];
         let delta_y = 2;
         let delta_x = 2;
         let counter = 0;
-        for (let i = ORIGIN[0]; i < ORIGIN[0] + GAME_WIDTH; i += delta_x) {
+        let brick_transform = Mat4.identity().times(Mat4.translation(start_x, start_y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
 
-            for (let j = BRICK_START_Y; j < ORIGIN[1] + GAME_LENGTH; j += delta_y) {
-                brick_transform = Mat4.identity().times(Mat4.translation(i, j, 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
+        for (let i = 0; i < BRICK_ROWS; i += 1) {
+
+            for (let j = 0; j < BRICK_COLUMNS; j += 1) {
+                brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0] + j * (BRICK_DIM + delta_x), ORIGIN[1] + i * (BRICK_DIM + delta_y), 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
 
                 let block = this.block_array[counter];
                 block.update_block_transformation(brick_transform);
@@ -307,16 +309,16 @@ export class Game extends Base_Scene {
 
         // draw the borders for the game
         let left_border_transform = Mat4.identity();
-        left_border_transform = left_border_transform.times(Mat4.translation(- 20, -10, 0));
-        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 10, 1));
+        left_border_transform = left_border_transform.times(Mat4.translation(-50, 5, 0));
+        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 27, 1));
 
         let top_border_transform = Mat4.identity();
-        top_border_transform = top_border_transform.times(Mat4.translation(0, 0, 0));
-        top_border_transform = top_border_transform.times(Mat4.scale(20, 0.1, 1));
+        top_border_transform = top_border_transform.times(Mat4.translation(0, 32, 0));
+        top_border_transform = top_border_transform.times(Mat4.scale(50, 0.1, 1));
 
         let right_border_transform = Mat4.identity();
-        right_border_transform = right_border_transform.times(Mat4.translation(20, -10, 0));
-        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 10, 1));
+        right_border_transform = right_border_transform.times(Mat4.translation(50, 5, 0));
+        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 27, 1));
 
 
         this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: yellow}));
@@ -338,16 +340,16 @@ export class Game extends Base_Scene {
         // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
 
         if (this.platformMoveLeft) {
-            this.platformX -= 1;
+            this.platformX -= 2;
             this.platformMoveLeft = false;
         }
         else if (this.platformMoveRight) {
-            this.platformX += 1
+            this.platformX += 2;
             this.platformMoveRight = false;
         }
 
         platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
-        platform_transform = platform_transform.times(Mat4.scale(2, .1, 1));
+        platform_transform = platform_transform.times(Mat4.scale(this.platform_radius, .1, 1));
 
         // draw the ball
         // const ball_delta = -5;
@@ -391,7 +393,7 @@ export class Game extends Base_Scene {
 
             this.ballMovementX *= -1;
         }
-        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 20)) {
+        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 50)) {
             this.time_offset = t;
             this.ballX = ball_transform[0][3];
             this.ballY = ball_transform[1][3];
