@@ -157,6 +157,8 @@ export class Game extends Base_Scene {
         this.sphere_radius = 1;
         this.platform_radius = 7;
 
+        this.side_border_length = 50;
+
         this.colors = this.createColors();
 
         this.block_array = [];
@@ -220,8 +222,8 @@ export class Game extends Base_Scene {
         const border_transform_x = border_transform[0][3];
         const border_transform_y = border_transform[1][3];
 
-        if (sphere_y - this.sphere_radius < border_transform_y + 10 &&
-            sphere_y + this.sphere_radius > border_transform_y - 10) {
+        if (sphere_y - this.sphere_radius < border_transform_y + this.side_border_length/2 &&
+            sphere_y + this.sphere_radius > border_transform_y - this.side_border_length/2) {
             if (side === "left") {
                 if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
                     return true;
@@ -391,7 +393,7 @@ export class Game extends Base_Scene {
 
             this.ballMovementX *= -1;
         }
-        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 20)) {
+        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 32)) {
             this.time_offset = t;
             this.ballX = ball_transform[0][3];
             this.ballY = ball_transform[1][3];
