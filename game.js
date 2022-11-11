@@ -307,16 +307,16 @@ export class Game extends Base_Scene {
 
         // draw the borders for the game
         let left_border_transform = Mat4.identity();
-        left_border_transform = left_border_transform.times(Mat4.translation(- 20, -10, 0));
-        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 10, 1));
+        left_border_transform = left_border_transform.times(Mat4.translation(-50, 5, 0));
+        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 27, 1));
 
         let top_border_transform = Mat4.identity();
-        top_border_transform = top_border_transform.times(Mat4.translation(0, 0, 0));
-        top_border_transform = top_border_transform.times(Mat4.scale(20, 0.1, 1));
+        top_border_transform = top_border_transform.times(Mat4.translation(0, 32, 0));
+        top_border_transform = top_border_transform.times(Mat4.scale(50, 0.1, 1));
 
         let right_border_transform = Mat4.identity();
-        right_border_transform = right_border_transform.times(Mat4.translation(20, -10, 0));
-        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 10, 1));
+        right_border_transform = right_border_transform.times(Mat4.translation(50, 5, 0));
+        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 27, 1));
 
 
         this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: yellow}));
