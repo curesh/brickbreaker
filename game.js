@@ -145,6 +145,8 @@ export class Game extends Base_Scene {
         this.ballX = 0;
         this.ballY = 0;
 
+        this.ballTransform = Mat4.identity();
+
         this.ballMovementCoefficientSum = 50;
 
         // ball movement, abs(x + y) should add up to ballMovementCoefficientSum
@@ -329,7 +331,6 @@ export class Game extends Base_Scene {
         this.shapes.cube.draw(context, program_state, top_border_transform, this.materials.plastic.override({color: yellow}));
         this.shapes.cube.draw(context, program_state, right_border_transform, this.materials.plastic.override({color: yellow}));
 
-        let ball_transform = Mat4.identity();
         this.generate_bricks(context, program_state);
         // time since starting given in seconds
         const t = this.t = program_state.animation_time / 1000;
@@ -337,10 +338,6 @@ export class Game extends Base_Scene {
 
         // make this value more negative for faster falling
 
-
-        // this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
-
-        // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
 
         if (this.platformMoveLeft) {
             this.platformTransform = this.platformTransform.times(Mat4.translation(-dt*10, 0, 0));
@@ -356,17 +353,18 @@ export class Game extends Base_Scene {
         // for changing the ball angle after colliding: just use the center of the ball's location for x
         // once we've confirmed that there's a collision, we send the ball flying at an offset depending on distance from center
 
+        // accounts for a delay in dt at the beginning where dt is a large value
+        if (t > 2) {
+            this.ballTransform = this.ballTransform.times(Mat4.translation(dt * this.ballMovementX, dt*this.ballMovementY, 0));
+        }
 
-        ball_transform = ball_transform.times(Mat4.translation(this.ballX + (time_delta * this.ballMovementX), this.ballY + (time_delta * this.ballMovementY), 0, 1));
-
-        this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
+        this.shapes.ball.draw(context, program_state, this.ballTransform, this.materials.plastic.override({color:blue}));
         this.shapes.cube.draw(context, program_state, this.platformTransform, this.materials.plastic.override({color:green}));
 
-
-        if (this.sphere_to_platform_collision_detection(ball_transform, this.platformTransform, "bottom", this.platform_radius)) {
+        if (this.sphere_to_platform_collision_detection(this.ballTransform, this.platformTransform, "bottom", this.platform_radius)) {
             this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             const platform_center = this.platformTransform[0][3];
 
@@ -384,31 +382,31 @@ export class Game extends Base_Scene {
             }
         }
 
-        if (this.sphere_to_border_collision_detection(ball_transform, left_border_transform, "left")) {
+        if (this.sphere_to_border_collision_detection(this.ballTransform, left_border_transform, "left")) {
             this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             this.ballMovementX *= -1;
         }
-        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 50)) {
+        else if (this.sphere_to_platform_collision_detection(this.ballTransform, top_border_transform, "top", 50)) {
             this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             this.ballMovementY *= -1;
         }
-        else if (this.sphere_to_border_collision_detection(ball_transform, right_border_transform, "right")) {
+        else if (this.sphere_to_border_collision_detection(this.ballTransform, right_border_transform, "right")) {
             this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             this.ballMovementX *= -1;
         }
 
         // check for collision with every single block
         for (let i = 0; i < this.block_array.length; i++) {
-            if (this.sphere_to_block_collision_detection(ball_transform, this.block_array[i].get_block_transformation())) {
+            if (this.sphere_to_block_collision_detection(this.ballTransform, this.block_array[i].get_block_transformation())) {
                 // TODO
             }
         }
