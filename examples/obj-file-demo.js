@@ -1,14 +1,14 @@
 import {defs, tiny} from './common.js';
 // Pull these names into this module's scope for convenience:
-const {vec3, vec4, vec, color, Mat4, Light, Shape, Material, Shader, Texture, Scene} = tiny;
+const {vec3, vec4, vec, color, Mat4, Light, Shape, Material, Shader, Texture, Scene, hex_color} = tiny;
 
 export class Shape_From_File extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
                                                                                // all its arrays' data from an .obj 3D model file.
-    constructor() {
+    constructor(path) {
         super("position", "normal", "texture_coord");
         // Begin downloading the mesh. Once that completes, return
         // control to our parse_into_mesh function.
-        this.load_file("assets/teapot.obj");
+        this.load_file(path);
     }
 
     load_file(filename) {                             // Request the external file and wait for it to load.
@@ -113,19 +113,19 @@ export class Obj_File_Demo extends Scene {                           // **Obj_Fi
     constructor() {
         super();
         // Load the model file:
-        this.shapes = {"teapot": new Shape_From_File("assets/teapot.obj")};
+        this.shapes = {"teapot": new Shape_From_File("assets/cheese.obj")};
 
         // Don't create any DOM elements to control this scene:
         this.widget_options = {make_controls: false};
         // Non bump mapped:
         this.stars = new Material(new defs.Textured_Phong(1), {
-            color: color(.5, .5, .5, 1),
-            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/earth.gif")
+            color: hex_color("#ffa600"),
+            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/cheese.jpg")
         });
         // Bump mapped:
         this.bumps = new Material(new defs.Fake_Bump_Map(1), {
-            color: color(.5, .5, .5, 1),
-            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/earth.gif")
+            color: hex_color("#ffa600"),
+            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/cheese.jpg")
         });
     }
 
@@ -143,7 +143,8 @@ export class Obj_File_Demo extends Scene {                           // **Obj_Fi
             const model_transform = Mat4.rotation(t / 2000, 0, 2, 1)
                 .times(Mat4.translation(2 * i, 0, 0))
                 .times(Mat4.rotation(t / 1500, -1, 2, 0))
-                .times(Mat4.rotation(-Math.PI / 2, 1, 0, 0));
+                .times(Mat4.rotation(-Math.PI / 2, 1, 0, 0))
+                .times(Mat4.scale(1,1,10));
             this.shapes.teapot.draw(context, program_state, model_transform, i == 1 ? this.stars : this.bumps);
         }
     }
