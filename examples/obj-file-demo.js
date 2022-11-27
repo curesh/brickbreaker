@@ -4,11 +4,11 @@ const {vec3, vec4, vec, color, Mat4, Light, Shape, Material, Shader, Texture, Sc
 
 export class Shape_From_File extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
                                                                                // all its arrays' data from an .obj 3D model file.
-    constructor(filename) {
+    constructor() {
         super("position", "normal", "texture_coord");
         // Begin downloading the mesh. Once that completes, return
         // control to our parse_into_mesh function.
-        this.load_file(filename);
+        this.load_file("assets/teapot.obj");
     }
 
     load_file(filename) {                             // Request the external file and wait for it to load.
@@ -120,12 +120,12 @@ export class Obj_File_Demo extends Scene {                           // **Obj_Fi
         // Non bump mapped:
         this.stars = new Material(new defs.Textured_Phong(1), {
             color: color(.5, .5, .5, 1),
-            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/stars.png")
+            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/earth.gif")
         });
         // Bump mapped:
         this.bumps = new Material(new defs.Fake_Bump_Map(1), {
             color: color(.5, .5, .5, 1),
-            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/stars.png")
+            ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/earth.gif")
         });
     }
 
