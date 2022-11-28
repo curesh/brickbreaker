@@ -254,26 +254,42 @@ export class Game extends Base_Scene {
         this.platformMoveLeft = false;
         this.platformMoveRight = false;
 
-        // positioning of the platform
-        this.platformX = 0;
-
         // positioning of the ball
         this.ballX = 0;
         this.ballY = 0;
 
+        this.ballTransform = Mat4.identity();
         this.ballMovementCoefficientSum = 50;
 
         // ball movement, abs(x + y) should add up to ballMovementCoefficientSum
         this.ballMovementX = 0;
         this.ballMovementY = -50;
 
-        // once a collision happens, we use this variable to reset the time to zero
-        this.time_offset = 0;
-
         this.sphere_radius = 1;
         this.platform_radius = 7;
 
-        this.side_border_length = 54;
+        this.platformTransform = Mat4.identity();
+        this.platformTransform = this.platformTransform.times(Mat4.translation(0, -20, 0));
+        this.platformTransform = this.platformTransform.times(Mat4.scale(this.platform_radius, .1, 1));
+
+        // borders
+
+        this.sideBorderLength = 27;
+        this.topBorderLength = 50;
+        this.originOffset = 5;
+
+        this.leftBorderTransform = Mat4.identity();
+        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.translation(-this.topBorderLength, this.originOffset, 0));
+        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 1));
+
+        this.topBorderTransform = Mat4.identity();
+        this.topBorderTransform = this.topBorderTransform.times(Mat4.translation(0, this.sideBorderLength + this.originOffset, 0));
+        this.topBorderTransform = this.topBorderTransform.times(Mat4.scale(this.topBorderLength, 0.1, 1));
+
+        this.rightBorderTransform = Mat4.identity();
+        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.translation(this.topBorderLength, this.originOffset, 0));
+        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 1));
+
 
         this.colors = this.createColors();
 
@@ -285,8 +301,8 @@ export class Game extends Base_Scene {
 
     // we'll use x to move left and c to move right
     make_control_panel() {
-        this.key_triggered_button("Move left", ["x"], () => this.platformMoveLeft = true);
-        this.key_triggered_button("Move right", ["c"], () => this.platformMoveRight = true);
+        this.key_triggered_button("Move left", ["x"], () => this.platformMoveLeft = true, '#6E6460', () => this.platformMoveLeft = false);
+        this.key_triggered_button("Move right", ["c"], () => this.platformMoveRight = true, '#6E6460', () => this.platformMoveRight = false);
     }
 
     draw_box(context, program_state, model_transform) {
@@ -338,8 +354,8 @@ export class Game extends Base_Scene {
         const border_transform_x = border_transform[0][3];
         const border_transform_y = border_transform[1][3];
 
-        if (sphere_y - this.sphere_radius < border_transform_y + this.side_border_length/2 &&
-            sphere_y + this.sphere_radius > border_transform_y - this.side_border_length/2) {
+        if (sphere_y - this.sphere_radius < border_transform_y + this.sideBorderLength &&
+            sphere_y + this.sphere_radius > border_transform_y - this.sideBorderLength) {
             if (side === "left") {
                 if (sphere_x > border_transform_x && (sphere_x - this.sphere_radius < border_transform_x)) {
                     return true;
@@ -427,74 +443,56 @@ export class Game extends Base_Scene {
         const yellow = hex_color("#FFFF00");
 
         // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
-
-        // draw the borders for the game
-        let left_border_transform = Mat4.identity();
-        left_border_transform = left_border_transform.times(Mat4.translation(-50, 5, 0));
-        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 27, 3));
-
-        let top_border_transform = Mat4.identity();
-        top_border_transform = top_border_transform.times(Mat4.translation(0, 32, 0));
-        top_border_transform = top_border_transform.times(Mat4.scale(50, 0.1, 3));
-
-        let right_border_transform = Mat4.identity();
-        right_border_transform = right_border_transform.times(Mat4.translation(50, 5, 0));
-        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 27, 3));
+        
+        this.shapes.cube.draw(context, program_state, this.leftBorderTransform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, this.topBorderTransform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, this.rightBorderTransform, this.materials.plastic.override({color: yellow}));
 
         let background_transform = Mat4.identity();
         background_transform = background_transform.times(Mat4.translation(0,5.5,-2));
         background_transform = background_transform.times(Mat4.scale(50,28,0.1));
 
-
-        this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: blue}));
-        this.shapes.cube.draw(context, program_state, top_border_transform, this.materials.plastic.override({color: blue}));
-        this.shapes.cube.draw(context, program_state, right_border_transform, this.materials.plastic.override({color: blue}));
-        
         this.shapes.cube.draw(context, program_state, background_transform, this.materials.bg);
 
-        let ball_transform = Mat4.identity();
         this.generate_bricks(context, program_state);
         // time since starting given in seconds
         const t = this.t = program_state.animation_time / 1000;
+        const dt = program_state.animation_delta_time / 1000;
 
         // make this value more negative for faster falling
 
-        let platform_transform = Mat4.identity();
-
-        // TODO (david): make the movement more smooth by making it based on time, and changing the platform location by adding the product of the time and (-1, 0, 1)
-
-        if (this.platformMoveLeft) {
-            this.platformX -= 2;
-            this.platformMoveLeft = false;
-        }
-        else if (this.platformMoveRight) {
-            this.platformX += 2;
+        // can't move any more to the left or the right if the platform is exceeding the bounds of the game
+        if (this.platformTransform[0][3] + this.platform_radius >= this.topBorderLength) {
             this.platformMoveRight = false;
         }
-
-        platform_transform = platform_transform.times(Mat4.translation(this.platformX, -20, 0));
-        platform_transform = platform_transform.times(Mat4.scale(this.platform_radius, .1, 1));
-
-        // draw the ball
-        // const ball_delta = -5;
-        const time_delta = t - this.time_offset;
+        
+        if (this.platformTransform[0][3] - this.platform_radius <= -this.topBorderLength) {
+            this.platformMoveLeft = false;
+        }
+        
+        if (this.platformMoveLeft) {
+            this.platformTransform = this.platformTransform.times(Mat4.translation(-dt*10, 0, 0));
+        }
+        else if (this.platformMoveRight) {
+            this.platformTransform = this.platformTransform.times(Mat4.translation(dt*10, 0, 0));
+        }
 
         // for changing the ball angle after colliding: just use the center of the ball's location for x
         // once we've confirmed that there's a collision, we send the ball flying at an offset depending on distance from center
 
+        // accounts for a delay in dt at the beginning where dt is a large value
+        if (t > 2) {
+            this.ballTransform = this.ballTransform.times(Mat4.translation(dt * this.ballMovementX, dt*this.ballMovementY, 0));
+        }
 
-        ball_transform = ball_transform.times(Mat4.translation(this.ballX + (time_delta * this.ballMovementX), this.ballY + (time_delta * this.ballMovementY), 0, 1));
+        this.shapes.ball.draw(context, program_state, this.ballTransform, this.materials.plastic.override({color:blue}));
+        this.shapes.cube.draw(context, program_state, this.platformTransform, this.materials.plastic.override({color:green}));
 
-        this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
-        this.shapes.cube.draw(context, program_state, platform_transform, this.materials.plastic.override({color:green}));
+        if (this.sphere_to_platform_collision_detection(this.ballTransform, this.platformTransform, "bottom", this.platform_radius)) {
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
-
-        if (this.sphere_to_platform_collision_detection(ball_transform, platform_transform, "bottom", this.platform_radius)) {
-            this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
-
-            const platform_center = platform_transform[0][3];
+            const platform_center = this.platformTransform[0][3];
 
             // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
             const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .2, Math.min(this.platform_radius - .2, this.ballX - platform_center));
@@ -510,31 +508,28 @@ export class Game extends Base_Scene {
             }
         }
 
-        if (this.sphere_to_border_collision_detection(ball_transform, left_border_transform, "left")) {
-            this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+        if (this.sphere_to_border_collision_detection(this.ballTransform, this.leftBorderTransform, "left")) {
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             this.ballMovementX *= -1;
         }
-        else if (this.sphere_to_platform_collision_detection(ball_transform, top_border_transform, "top", 50)) {
-            this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+        else if (this.sphere_to_platform_collision_detection(this.ballTransform, this.topBorderTransform, "top", 50)) {
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             this.ballMovementY *= -1;
         }
-        else if (this.sphere_to_border_collision_detection(ball_transform, right_border_transform, "right")) {
-            this.time_offset = t;
-            this.ballX = ball_transform[0][3];
-            this.ballY = ball_transform[1][3];
+        else if (this.sphere_to_border_collision_detection(this.ballTransform, this.rightBorderTransform, "right")) {
+            this.ballX = this.ballTransform[0][3];
+            this.ballY = this.ballTransform[1][3];
 
             this.ballMovementX *= -1;
         }
 
         // check for collision with every single block
         for (let i = 0; i < this.block_array.length; i++) {
-            if (this.sphere_to_block_collision_detection(ball_transform, this.block_array[i].get_block_transformation())) {
+            if (this.sphere_to_block_collision_detection(this.ballTransform, this.block_array[i].get_block_transformation())) {
                 // TODO
             }
         }
