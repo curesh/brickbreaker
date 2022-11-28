@@ -160,17 +160,18 @@ export class Game extends Base_Scene {
 
         this.sideBorderLength = 27;
         this.topBorderLength = 50;
+        this.originOffset = 5;
 
         this.leftBorderTransform = Mat4.identity();
-        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.translation(-50, 5, 0));
+        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.translation(-this.topBorderLength, this.originOffset, 0));
         this.leftBorderTransform = this.leftBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 1));
 
         this.topBorderTransform = Mat4.identity();
-        this.topBorderTransform = this.topBorderTransform.times(Mat4.translation(0, 32, 0));
+        this.topBorderTransform = this.topBorderTransform.times(Mat4.translation(0, this.sideBorderLength + this.originOffset, 0));
         this.topBorderTransform = this.topBorderTransform.times(Mat4.scale(this.topBorderLength, 0.1, 1));
 
         this.rightBorderTransform = Mat4.identity();
-        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.translation(50, 5, 0));
+        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.translation(this.topBorderLength, this.originOffset, 0));
         this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 1));
 
 
@@ -333,6 +334,14 @@ export class Game extends Base_Scene {
 
         // make this value more negative for faster falling
 
+        // can't move any more to the left or the right if the platform is exceeding the bounds of the game
+        if (this.platformTransform[0][3] + this.platform_radius >= this.topBorderLength) {
+            this.platformMoveRight = false;
+        }
+        
+        if (this.platformTransform[0][3] - this.platform_radius <= -this.topBorderLength) {
+            this.platformMoveLeft = false;
+        }
 
         if (this.platformMoveLeft) {
             this.platformTransform = this.platformTransform.times(Mat4.translation(-dt*10, 0, 0));
