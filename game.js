@@ -263,15 +263,15 @@ export class Game extends Base_Scene {
 
         this.leftBorderTransform = Mat4.identity();
         this.leftBorderTransform = this.leftBorderTransform.times(Mat4.translation(-this.topBorderLength, this.originOffset, 0));
-        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 1));
+        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 3));
 
         this.topBorderTransform = Mat4.identity();
         this.topBorderTransform = this.topBorderTransform.times(Mat4.translation(0, this.sideBorderLength + this.originOffset, 0));
-        this.topBorderTransform = this.topBorderTransform.times(Mat4.scale(this.topBorderLength, 0.1, 1));
+        this.topBorderTransform = this.topBorderTransform.times(Mat4.scale(this.topBorderLength, 0.1, 3));
 
         this.rightBorderTransform = Mat4.identity();
         this.rightBorderTransform = this.rightBorderTransform.times(Mat4.translation(this.topBorderLength, this.originOffset, 0));
-        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 1));
+        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 3));
 
 
         this.colors = this.createColors();
@@ -421,9 +421,9 @@ export class Game extends Base_Scene {
 
         // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
         
-        this.shapes.cube.draw(context, program_state, this.leftBorderTransform, this.materials.plastic.override({color: yellow}));
-        this.shapes.cube.draw(context, program_state, this.topBorderTransform, this.materials.plastic.override({color: yellow}));
-        this.shapes.cube.draw(context, program_state, this.rightBorderTransform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, this.leftBorderTransform, this.materials.plastic.override({color: blue}));
+        this.shapes.cube.draw(context, program_state, this.topBorderTransform, this.materials.plastic.override({color: blue}));
+        this.shapes.cube.draw(context, program_state, this.rightBorderTransform, this.materials.plastic.override({color: blue}));
 
         let background_transform = Mat4.identity();
         background_transform = background_transform.times(Mat4.translation(0,5.5,-2));
