@@ -3,24 +3,7 @@ import {defs, tiny} from './examples/common.js';
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
-const {Cube, Textured_Phong} = defs;
-// class Cube extends Shape {
-//     constructor() {
-//         super("position", "normal",);
-//         // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
-//         this.arrays.position = Vector3.cast(
-//             [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
-//             [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
-//             [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
-//         this.arrays.normal = Vector3.cast(
-//             [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
-//             [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-//             [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1]);
-//         // Arrange the vertices into a square shape in texture space too:
-//         this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
-//             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
-//     }
-// }
+const {Cube, Textured_Phong, Axis_Arrows} = defs;
 
 export class Brick extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
                                                                                // all its arrays' data from an .obj 3D model file.
@@ -138,7 +121,7 @@ class Cube_Single_Strip extends Shape {
 }
 
 
-class Base_Scene extends Scene {
+export class Base_Scene extends Scene {
     /**
      *  **Base_scene** is a Scene that can be added to any display canvas.
      *  Setup the shapes, materials, camera, and lighting here.
@@ -176,7 +159,7 @@ class Base_Scene extends Scene {
                 color: color(.5, .5, .5, 1),
                 ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/stone.jpg")
             }),
-            bg: new Material(new Textured_Phong(), {
+            bg: new Material(new Texture_Scroll_X(), {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/black-city.jpeg", "LINEAR_MIPMAP_LINEAR")
@@ -428,12 +411,6 @@ export class Game extends Base_Scene {
         }
     }
 
-    // TODO (chandra): Gamify the scene by putting the 3d game as a 2d texture
-    // use scene-to-texture-demo
-    createBackgroundTexture() {
-
-    }
-
     display(context, program_state) {
         super.display(context, program_state);
 
@@ -533,5 +510,36 @@ export class Game extends Base_Scene {
                 // TODO
             }
         }
+    }
+}
+
+class Texture_Scroll_X extends Textured_Phong {
+    // TODO:  Modify the shader below (right now it's just the same fragment shader as Textured_Phong) for requirement #6.
+    fragment_glsl_code() {
+        return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+            
+            void main(){
+                // Sample the texture image in the correct place:
+                float t = mod(animation_time, 10.) * 0.1; 
+                mat4 slide_matrix = mat4(vec4(-1., 0., 0., 0.), 
+                                   vec4( 0., 1., 0., 0.), 
+                                   vec4( 0., 0., 1., 0.), 
+                                   vec4(t, 0., 0., 1.)); 
+                vec4 scaled_tex_coord = vec4(f_tex_coord, 0, 0) + vec4(1., 1., 0., 1.); 
+                scaled_tex_coord = slide_matrix * scaled_tex_coord; 
+                vec4 tex_color = texture2D(texture, scaled_tex_coord.xy);
+
+                float u = mod(scaled_tex_coord.x, 1.0);
+                float v = mod(scaled_tex_coord.y, 1.0);
+
+                if( tex_color.w < .01 ) discard;                if( tex_color.w < .01 ) discard;
+                                                                         // Compute an initial (ambient) color:
+                gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w ); 
+                                                                         // Compute the final color with contributions from lights:
+                gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+        } `;
     }
 }

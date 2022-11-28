@@ -772,6 +772,7 @@ const Textured_Phong = defs.Textured_Phong =
             if (material.texture && material.texture.ready) {
                 // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
                 context.uniform1i(gpu_addresses.texture, 0);
+                context.uniform1f(gpu_addresses.animation_time, gpu_state.animation_time / 1000);
                 // For this draw, use the texture image from correct the GPU buffer:
                 material.texture.activate(context);
             }
