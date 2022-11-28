@@ -1,24 +1,125 @@
 import {defs, tiny} from './examples/common.js';
 
 const {
-    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene,
+    Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
+const {Cube, Textured_Phong} = defs;
+// class Cube extends Shape {
+//     constructor() {
+//         super("position", "normal",);
+//         // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
+//         this.arrays.position = Vector3.cast(
+//             [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
+//             [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
+//             [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
+//         this.arrays.normal = Vector3.cast(
+//             [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+//             [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+//             [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1]);
+//         // Arrange the vertices into a square shape in texture space too:
+//         this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
+//             14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
+//     }
+// }
 
-class Cube extends Shape {
-    constructor() {
-        super("position", "normal",);
-        // Loop 3 times (for each axis), and inside loop twice (for opposing cube sides):
-        this.arrays.position = Vector3.cast(
-            [-1, -1, -1], [1, -1, -1], [-1, -1, 1], [1, -1, 1], [1, 1, -1], [-1, 1, -1], [1, 1, 1], [-1, 1, 1],
-            [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, 1], [1, -1, -1], [1, 1, 1], [1, 1, -1],
-            [-1, -1, 1], [1, -1, 1], [-1, 1, 1], [1, 1, 1], [1, -1, -1], [-1, -1, -1], [1, 1, -1], [-1, 1, -1]);
-        this.arrays.normal = Vector3.cast(
-            [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
-            [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-            [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1]);
-        // Arrange the vertices into a square shape in texture space too:
-        this.indices.push(0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 8, 9, 10, 9, 11, 10, 12, 13,
-            14, 13, 15, 14, 16, 17, 18, 17, 19, 18, 20, 21, 22, 21, 23, 22);
+export class Brick extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
+                                                                               // all its arrays' data from an .obj 3D model file.
+    constructor(path) {
+        super("position", "normal", "texture_coord");
+        // Begin downloading the mesh. Once that completes, return
+        // control to our parse_into_mesh function.
+        this.load_file(path);
+    }
+
+    load_file(filename) {                             // Request the external file and wait for it to load.
+        // Failure mode:  Loads an empty shape.
+        return fetch(filename)
+            .then(response => {
+                if (response.ok) return Promise.resolve(response.text())
+                else return Promise.reject(response.status)
+            })
+            .then(obj_file_contents => this.parse_into_mesh(obj_file_contents))
+            .catch(error => {
+                this.copy_onto_graphics_card(this.gl);
+            })
+    }
+
+    parse_into_mesh(data) {                           // Adapted from the "webgl-obj-loader.js" library found online:
+        var verts = [], vertNormals = [], textures = [], unpacked = {};
+
+        unpacked.verts = [];
+        unpacked.norms = [];
+        unpacked.textures = [];
+        unpacked.hashindices = {};
+        unpacked.indices = [];
+        unpacked.index = 0;
+
+        var lines = data.split('\n');
+
+        var VERTEX_RE = /^v\s/;
+        var NORMAL_RE = /^vn\s/;
+        var TEXTURE_RE = /^vt\s/;
+        var FACE_RE = /^f\s/;
+        var WHITESPACE_RE = /\s+/;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            var elements = line.split(WHITESPACE_RE);
+            elements.shift();
+
+            if (VERTEX_RE.test(line)) verts.push.apply(verts, elements);
+            else if (NORMAL_RE.test(line)) vertNormals.push.apply(vertNormals, elements);
+            else if (TEXTURE_RE.test(line)) textures.push.apply(textures, elements);
+            else if (FACE_RE.test(line)) {
+                var quad = false;
+                for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
+                    if (j === 3 && !quad) {
+                        j = 2;
+                        quad = true;
+                    }
+                    if (elements[j] in unpacked.hashindices)
+                        unpacked.indices.push(unpacked.hashindices[elements[j]]);
+                    else {
+                        var vertex = elements[j].split('/');
+
+                        unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
+                        unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
+                        unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2]);
+
+                        if (textures.length) {
+                            unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 0]);
+                            unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 1]);
+                        }
+
+                        unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 0]);
+                        unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 1]);
+                        unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 2]);
+
+                        unpacked.hashindices[elements[j]] = unpacked.index;
+                        unpacked.indices.push(unpacked.index);
+                        unpacked.index += 1;
+                    }
+                    if (j === 3 && quad) unpacked.indices.push(unpacked.hashindices[elements[0]]);
+                }
+            }
+        }
+        {
+            const {verts, norms, textures} = unpacked;
+            for (var j = 0; j < verts.length / 3; j++) {
+                this.arrays.position.push(vec3(verts[3 * j], verts[3 * j + 1], verts[3 * j + 2]));
+                this.arrays.normal.push(vec3(norms[3 * j], norms[3 * j + 1], norms[3 * j + 2]));
+                this.arrays.texture_coord.push(vec(textures[2 * j], textures[2 * j + 1]));
+            }
+            this.indices = unpacked.indices;
+        }
+        this.normalize_positions(false);
+        this.ready = true;
+    }
+
+    draw(context, program_state, model_transform, material) {               // draw(): Same as always for shapes, but cancel all
+        // attempts to draw the shape before it loads:
+        if (this.ready)
+            super.draw(context, program_state, model_transform, material);
     }
 }
 
@@ -48,6 +149,9 @@ class Base_Scene extends Scene {
         this.hover = this.swarm = false;
         // At the beginning of our program, load one of each of these shape definitions onto the GPU.
         this.shapes = {
+            'crate': new Brick("assets/crate.obj"),
+            'sand': new Brick("assets/sand.obj"),
+            'stone': new Brick("assets/stone.obj"),
             'cube': new Cube(),
             'outline': new Cube_Outline(),
             'tmp_cube': new defs.Cube(),
@@ -58,6 +162,25 @@ class Base_Scene extends Scene {
         this.materials = {
             plastic: new Material(new defs.Phong_Shader(),
                 {ambient: .4, diffusivity: .6, color: hex_color("#ffffff")}),
+            background: new Material(new defs.Phong_Shader(),
+                {ambient: .4, diffusivity:.6, specularity: 0}),
+            crate : new Material(new defs.Fake_Bump_Map(1), {
+                color: hex_color("#5A3828"),
+                ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/crate.png")
+            }),
+            sand : new Material(new defs.Fake_Bump_Map(1), {
+                color: hex_color("#C2B280"),
+                ambient: .5, diffusivity: .5, specularity: 0, texture: new Texture("assets/sand.jpg")
+            }),
+            stone : new Material(new defs.Fake_Bump_Map(1), {
+                color: color(.5, .5, .5, 1),
+                ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/stone.jpg")
+            }),
+            bg: new Material(new Textured_Phong(), {
+                color: hex_color("#000000"),
+                ambient: 1, diffusivity: 0.1, specularity: 0.1,
+                texture: new Texture("assets/black-city.jpeg", "LINEAR_MIPMAP_LINEAR")
+            }),
         };
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
@@ -77,47 +200,40 @@ class Base_Scene extends Scene {
             Math.PI / 4, context.width / context.height, 1, 100);
 
         // *** Lights: *** Values of vector or point lights.
-        const light_position = vec4(0, 5, 5, 1);
+        const light_position = vec4(0, 15, 15, 1);
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
     }
 }
 
 const Brick_Type = {
     None: 0,
-    Glass: 1,
-    Brick: 2,
-    Steel: 3
+    Crate: 1,
+    Sand: 2,
+    Stone: 3
 }
 
 class Block {
 
     constructor() {
         this.block_type = Math.floor(Math.random() * 4)
-        this.block_transformation = null;
     }
 
     get_block_type() {
         return this.block_type;
     }
 
-    update_block_transformation(block_transformation) {
-        this.block_transformation = block_transformation;
-    }
-
-    get_block_transformation() {
-        return this.block_transformation;
+    get_block_transformation(i, j) {
+        let delta_y = 2;
+        let delta_x = 2;
+        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0] + j * (BRICK_DIM + delta_x), ORIGIN[1] + i * (BRICK_DIM + delta_y), 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
+        if (this.block_type == Brick_Type.Crate) {
+            return brick_transform.times(Mat4.scale(2.5,2.5,2.5));
+        }
+        
+        return brick_transform.times(Mat4.scale(5, 10, 2));
     }
 }
 
-// Dimensions of the game (only in x and y space)
-// Y : -20 < y < 20
-// X : -10 < x < 10
-// Bricks : 10 < y < 20
-// Bricks : -10 < x < 10
-// Brick dimensions : 1.5 x 1.5
-// Brick count : 50
-// Platform y = -20, -10 < x < 10
-// Platform dimension = 2 x 0.1
 
 const ORIGIN = [-45, 10];
 const BRICK_ROWS = 6;
@@ -260,35 +376,32 @@ export class Game extends Base_Scene {
     generate_bricks(context, program_state) {
         let start_x = ORIGIN[0];
         let start_y = ORIGIN[1];
-        let delta_y = 2;
-        let delta_x = 2;
         let counter = 0;
-        let brick_transform = Mat4.identity().times(Mat4.translation(start_x, start_y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM));
+        let brick_transform = Mat4.identity().times(Mat4.translation(start_x, start_y, 0)).times(Mat4.scale(1/BRICK_DIM,1/BRICK_DIM, 1/BRICK_DIM)).times(Mat4.scale(2,2,2));
 
         for (let i = 0; i < BRICK_ROWS; i += 1) {
 
             for (let j = 0; j < BRICK_COLUMNS; j += 1) {
-                brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0] + j * (BRICK_DIM + delta_x), ORIGIN[1] + i * (BRICK_DIM + delta_y), 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
 
                 let block = this.block_array[counter];
-                block.update_block_transformation(brick_transform);
+                brick_transform = block.get_block_transformation(i, j);
 
                 // use block_type cases to determine what material to draw
                 let block_type = block.get_block_type();
                 if (block_type === Brick_Type.None) {
                     // draw nothing
                 }
-                else if (block_type === Brick_Type.Glass) {
+                else if (block_type === Brick_Type.Crate) {
                     // TODO: (tina) figure out how to draw glass material
-                    this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color: hex_color('#FFFFFF')}));
+                    this.shapes.crate.draw(context, program_state, brick_transform, this.materials.crate);
                 }
-                else if (block_type === Brick_Type.Brick) {
+                else if (block_type === Brick_Type.Sand) {
                     // TODO: brick material
-                    this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color: hex_color('#964B00')}));
+                    this.shapes.sand.draw(context, program_state, brick_transform, this.materials.sand);
                 }
-                else if (block_type === Brick_Type.Steel) {
+                else if (block_type === Brick_Type.Stone) {
                     // TODO: steel material
-                    this.shapes.cube.draw(context, program_state, brick_transform, this.materials.plastic.override({color: hex_color('#808080')}));
+                    this.shapes.stone.draw(context, program_state, brick_transform, this.materials.stone);
                 }
                 else {
                     // error lol
@@ -299,8 +412,16 @@ export class Game extends Base_Scene {
         }
     }
 
+    // TODO (chandra): Gamify the scene by putting the 3d game as a 2d texture
+    // use scene-to-texture-demo
+    createBackgroundTexture() {
+
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
+
+
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
         const yellow = hex_color("#FFFF00");
@@ -310,20 +431,26 @@ export class Game extends Base_Scene {
         // draw the borders for the game
         let left_border_transform = Mat4.identity();
         left_border_transform = left_border_transform.times(Mat4.translation(-50, 5, 0));
-        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 27, 1));
+        left_border_transform = left_border_transform.times(Mat4.scale(0.1, 27, 3));
 
         let top_border_transform = Mat4.identity();
         top_border_transform = top_border_transform.times(Mat4.translation(0, 32, 0));
-        top_border_transform = top_border_transform.times(Mat4.scale(50, 0.1, 1));
+        top_border_transform = top_border_transform.times(Mat4.scale(50, 0.1, 3));
 
         let right_border_transform = Mat4.identity();
         right_border_transform = right_border_transform.times(Mat4.translation(50, 5, 0));
-        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 27, 1));
+        right_border_transform = right_border_transform.times(Mat4.scale(0.1, 27, 3));
+
+        let background_transform = Mat4.identity();
+        background_transform = background_transform.times(Mat4.translation(0,5.5,-2));
+        background_transform = background_transform.times(Mat4.scale(50,28,0.1));
 
 
-        this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: yellow}));
-        this.shapes.cube.draw(context, program_state, top_border_transform, this.materials.plastic.override({color: yellow}));
-        this.shapes.cube.draw(context, program_state, right_border_transform, this.materials.plastic.override({color: yellow}));
+        this.shapes.cube.draw(context, program_state, left_border_transform, this.materials.plastic.override({color: blue}));
+        this.shapes.cube.draw(context, program_state, top_border_transform, this.materials.plastic.override({color: blue}));
+        this.shapes.cube.draw(context, program_state, right_border_transform, this.materials.plastic.override({color: blue}));
+        
+        this.shapes.cube.draw(context, program_state, background_transform, this.materials.bg);
 
         let ball_transform = Mat4.identity();
         this.generate_bricks(context, program_state);
@@ -331,9 +458,6 @@ export class Game extends Base_Scene {
         const t = this.t = program_state.animation_time / 1000;
 
         // make this value more negative for faster falling
-
-
-        // this.shapes.ball.draw(context, program_state, ball_transform, this.materials.plastic.override({color:blue}));
 
         let platform_transform = Mat4.identity();
 
