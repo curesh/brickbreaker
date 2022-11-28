@@ -1,125 +1,12 @@
 import {defs, tiny} from './examples/common.js';
 import {Texture_Scroll_X} from './textures.js';
+import {Brick} from "./brick.js";
+import {Brick_Type, Block} from "./block.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 const {Cube} = defs;
-
-export class Brick extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
-                                                                               // all its arrays' data from an .obj 3D model file.
-    constructor(path) {
-        super("position", "normal", "texture_coord");
-        // Begin downloading the mesh. Once that completes, return
-        // control to our parse_into_mesh function.
-        this.load_file(path);
-    }
-
-    load_file(filename) {                             // Request the external file and wait for it to load.
-        // Failure mode:  Loads an empty shape.
-        return fetch(filename)
-            .then(response => {
-                if (response.ok) return Promise.resolve(response.text())
-                else return Promise.reject(response.status)
-            })
-            .then(obj_file_contents => this.parse_into_mesh(obj_file_contents))
-            .catch(error => {
-                this.copy_onto_graphics_card(this.gl);
-            })
-    }
-
-    parse_into_mesh(data) {                           // Adapted from the "webgl-obj-loader.js" library found online:
-        var verts = [], vertNormals = [], textures = [], unpacked = {};
-
-        unpacked.verts = [];
-        unpacked.norms = [];
-        unpacked.textures = [];
-        unpacked.hashindices = {};
-        unpacked.indices = [];
-        unpacked.index = 0;
-
-        var lines = data.split('\n');
-
-        var VERTEX_RE = /^v\s/;
-        var NORMAL_RE = /^vn\s/;
-        var TEXTURE_RE = /^vt\s/;
-        var FACE_RE = /^f\s/;
-        var WHITESPACE_RE = /\s+/;
-
-        for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            var elements = line.split(WHITESPACE_RE);
-            elements.shift();
-
-            if (VERTEX_RE.test(line)) verts.push.apply(verts, elements);
-            else if (NORMAL_RE.test(line)) vertNormals.push.apply(vertNormals, elements);
-            else if (TEXTURE_RE.test(line)) textures.push.apply(textures, elements);
-            else if (FACE_RE.test(line)) {
-                var quad = false;
-                for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
-                    if (j === 3 && !quad) {
-                        j = 2;
-                        quad = true;
-                    }
-                    if (elements[j] in unpacked.hashindices)
-                        unpacked.indices.push(unpacked.hashindices[elements[j]]);
-                    else {
-                        var vertex = elements[j].split('/');
-
-                        unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
-                        unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
-                        unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2]);
-
-                        if (textures.length) {
-                            unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 0]);
-                            unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 1]);
-                        }
-
-                        unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 0]);
-                        unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 1]);
-                        unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 2]);
-
-                        unpacked.hashindices[elements[j]] = unpacked.index;
-                        unpacked.indices.push(unpacked.index);
-                        unpacked.index += 1;
-                    }
-                    if (j === 3 && quad) unpacked.indices.push(unpacked.hashindices[elements[0]]);
-                }
-            }
-        }
-        {
-            const {verts, norms, textures} = unpacked;
-            for (var j = 0; j < verts.length / 3; j++) {
-                this.arrays.position.push(vec3(verts[3 * j], verts[3 * j + 1], verts[3 * j + 2]));
-                this.arrays.normal.push(vec3(norms[3 * j], norms[3 * j + 1], norms[3 * j + 2]));
-                this.arrays.texture_coord.push(vec(textures[2 * j], textures[2 * j + 1]));
-            }
-            this.indices = unpacked.indices;
-        }
-        this.normalize_positions(false);
-        this.ready = true;
-    }
-
-    draw(context, program_state, model_transform, material) {               // draw(): Same as always for shapes, but cancel all
-        // attempts to draw the shape before it loads:
-        if (this.ready)
-            super.draw(context, program_state, model_transform, material);
-    }
-}
-
-class Cube_Outline extends Shape {
-    constructor() {
-        super("position", "color");
-
-    }
-}
-
-class Cube_Single_Strip extends Shape {
-    constructor() {
-        super("position", "normal");
-        // TODO (Requirement 6)
-    }
-}
 
 
 export class Base_Scene extends Scene {
@@ -137,8 +24,6 @@ export class Base_Scene extends Scene {
             'sand': new Brick("assets/sand.obj"),
             'stone': new Brick("assets/stone.obj"),
             'cube': new Cube(),
-            'outline': new Cube_Outline(),
-            'tmp_cube': new defs.Cube(),
             'ball': new defs.Subdivision_Sphere(4),
         };
 
@@ -188,36 +73,6 @@ export class Base_Scene extends Scene {
         program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
     }
 }
-
-const Brick_Type = {
-    None: 0,
-    Crate: 1,
-    Sand: 2,
-    Stone: 3
-}
-
-class Block {
-
-    constructor() {
-        this.block_type = Math.floor(Math.random() * 4)
-    }
-
-    get_block_type() {
-        return this.block_type;
-    }
-
-    get_block_transformation(i, j) {
-        let delta_y = 2;
-        let delta_x = 2;
-        let brick_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0] + j * (BRICK_DIM + delta_x), ORIGIN[1] + i * (BRICK_DIM + delta_y), 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
-        if (this.block_type == Brick_Type.Crate) {
-            return brick_transform.times(Mat4.scale(2.5,2.5,2.5));
-        }
-        
-        return brick_transform.times(Mat4.scale(5, 10, 2));
-    }
-}
-
 
 const ORIGIN = [-45, 10];
 const BRICK_ROWS = 6;
