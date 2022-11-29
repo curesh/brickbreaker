@@ -90,6 +90,10 @@ export class Game extends Base_Scene {
     constructor() {
         super();
 
+        this.init();
+    }
+
+    init() {
         this.platformMoveLeft = false;
         this.platformMoveRight = false;
 
@@ -119,16 +123,18 @@ export class Game extends Base_Scene {
 
         this.leftBorderTransform = Mat4.identity();
         this.leftBorderTransform = this.leftBorderTransform.times(Mat4.translation(-this.topBorderLength, this.originOffset, 0));
-        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 3));
+        this.leftBorderTransform = this.leftBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 2));
 
         this.topBorderTransform = Mat4.identity();
         this.topBorderTransform = this.topBorderTransform.times(Mat4.translation(0, this.sideBorderLength + this.originOffset, 0));
-        this.topBorderTransform = this.topBorderTransform.times(Mat4.scale(this.topBorderLength, 0.1, 3));
+        this.topBorderTransform = this.topBorderTransform.times(Mat4.scale(this.topBorderLength, 0.1, 2));
 
         this.rightBorderTransform = Mat4.identity();
         this.rightBorderTransform = this.rightBorderTransform.times(Mat4.translation(this.topBorderLength, this.originOffset, 0));
-        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 3));
+        this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 2));
 
+        this.gameOver = false;
+        this.score = 0;
 
         this.colors = this.createColors();
 
@@ -140,8 +146,22 @@ export class Game extends Base_Scene {
 
     // we'll use x to move left and c to move right
     make_control_panel() {
-        this.key_triggered_button("Move left", ["x"], () => this.platformMoveLeft = true, '#6E6460', () => this.platformMoveLeft = false);
-        this.key_triggered_button("Move right", ["c"], () => this.platformMoveRight = true, '#6E6460', () => this.platformMoveRight = false);
+        this.control_panel.innerHTML += "Score: ";
+        this.live_string(box => box.textContent = this.score);
+        this.new_line();
+        this.new_line();
+
+        this.key_triggered_button("Move left", ["x"], () => {
+            if (!this.gameOver) {
+                this.platformMoveLeft = true
+            }
+        }, '#6E6460', () => this.platformMoveLeft = false);
+        this.key_triggered_button("Move right", ["c"], () => {
+            if (!this.gameOver) {
+                this.platformMoveRight = true
+            }
+        }, '#6E6460', () => this.platformMoveRight = false);
+        this.key_triggered_button("Reset", ["r"], () => this.init());
     }
 
     draw_box(context, program_state, model_transform) {
@@ -270,16 +290,22 @@ export class Game extends Base_Scene {
     display(context, program_state) {
         super.display(context, program_state);
 
+        // this.make_control_panel();
 
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
         const yellow = hex_color("#FFFF00");
+        const turquoise = hex_color("#50C5B7");
+
+        if (!this.gameOver) {
+            this.score++;
+        }
 
         // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
         
-        this.shapes.cube.draw(context, program_state, this.leftBorderTransform, this.materials.plastic.override({color: blue}));
-        this.shapes.cube.draw(context, program_state, this.topBorderTransform, this.materials.plastic.override({color: blue}));
-        this.shapes.cube.draw(context, program_state, this.rightBorderTransform, this.materials.plastic.override({color: blue}));
+        this.shapes.cube.draw(context, program_state, this.leftBorderTransform, this.materials.plastic.override({color: turquoise}));
+        this.shapes.cube.draw(context, program_state, this.topBorderTransform, this.materials.plastic.override({color: turquoise}));
+        this.shapes.cube.draw(context, program_state, this.rightBorderTransform, this.materials.plastic.override({color: turquoise}));
 
         let background_transform = Mat4.identity();
         background_transform = background_transform.times(Mat4.translation(0,5.5,-2));
@@ -321,7 +347,10 @@ export class Game extends Base_Scene {
         this.shapes.ball.draw(context, program_state, this.ballTransform, this.materials.plastic.override({color:blue}));
         this.shapes.cube.draw(context, program_state, this.platformTransform, this.materials.plastic.override({color:green}));
 
-        if (this.sphere_to_platform_collision_detection(this.ballTransform, this.platformTransform, "bottom", this.platform_radius)) {
+        if (this.ballTransform[1][3] < this.platformTransform[1][3]) {
+            this.gameOver = true;
+        }
+        else if (this.sphere_to_platform_collision_detection(this.ballTransform, this.platformTransform, "bottom", this.platform_radius)) {
             this.ballX = this.ballTransform[0][3];
             this.ballY = this.ballTransform[1][3];
 
@@ -340,6 +369,8 @@ export class Game extends Base_Scene {
                 // console.log("y: ", this.ballMovementY);
             }
         }
+
+        // collisions with the surrounding borders
 
         if (this.sphere_to_border_collision_detection(this.ballTransform, this.leftBorderTransform, "left")) {
             this.ballX = this.ballTransform[0][3];
