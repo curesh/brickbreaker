@@ -3,6 +3,7 @@ import {Texture_Scroll_X} from './textures.js';
 import {Brick} from "./brick.js";
 import {Block_Type, Block} from "./block.js";
 import {Text_Line} from "./examples/text-demo.js";
+import {Shape_From_File} from "./examples/obj-file-demo.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -27,6 +28,7 @@ export class Base_Scene extends Scene {
             'cube': new Cube(),
             'ball': new defs.Subdivision_Sphere(4),
             'text': new Text_Line(35),
+            'heart': new Shape_From_File("assets/heart.obj")
         };
 
         // *** Materials
@@ -56,6 +58,10 @@ export class Base_Scene extends Scene {
                 ambient: 1, diffusivity: 0, specularity: 0,
                 texture: new Texture("assets/text.png")
             }),
+            heart_texture: new Material(new defs.Phong_Shader(), {
+                ambient: 1, diffusivity: 1, specularity: 1,
+                color: hex_color("#FF0000")
+            })
         };
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
@@ -145,6 +151,7 @@ export class Game extends Base_Scene {
 
         this.gameOver = false;
         this.score = 0;
+        this.lives = 3;
 
         this.colors = this.createColors();
 
@@ -443,9 +450,24 @@ export class Game extends Base_Scene {
 
         // draw the score
         let score_text = "Score: " + this.score;
-        let score_transform = Mat4.identity().times(Mat4.translation(30, -20, 0));
+        let score_transform = Mat4.identity().times(Mat4.translation(33, -20, 0));
         console.log(score_text)
         this.shapes.text.set_string(score_text, context.context);
         this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
+
+        // draw lives
+        let lives_text = "Lives: " + this.lives;
+        let lives_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        this.shapes.text.set_string(lives_text, context.context);
+        this.shapes.text.draw(context, program_state, lives_transform, this.materials.text_material);
+
+        // draw heart
+        let heart_transform = Mat4.identity().times(Mat4.translation(-30, -19.5, 0));
+        for (let i = 0; i < this.lives; i++) {
+            heart_transform = heart_transform.times(Mat4.rotation(3*Math.PI/2,1,0,0))
+            this.shapes.heart.draw(context, program_state, heart_transform, this.materials.heart_texture);
+            heart_transform = heart_transform.times(Mat4.translation(3, 0, 0)
+                .times(Mat4.rotation(-3*Math.PI/2,1,0,0)));
+        }
     }
 }
