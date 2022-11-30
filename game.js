@@ -1,7 +1,7 @@
 import {defs, tiny} from './examples/common.js';
 import {Texture_Scroll_X} from './textures.js';
 import {Brick} from "./brick.js";
-import {Brick_Type, Block} from "./block.js";
+import {Block_Type, Block} from "./block.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -232,11 +232,18 @@ export class Game extends Base_Scene {
         return false;
     }
 
-    sphere_to_block_collision_detection(sphere_transform, block_transform) {
+    sphere_to_block_collision_detection(sphere_transform, block_coordinates) {
+        const block_x = block_coordinates.x_coord,
+            block_y = block_coordinates.y_coord;
         const sphere_x = sphere_transform[0][3];
         const sphere_y = sphere_transform[1][3];
+        const buffer = 3;
 
-        return true;
+        if ((Math.abs(block_x - sphere_x) < buffer) && (Math.abs(block_y - sphere_y) < buffer)) {
+            return true;
+        }
+
+        return false;
     }
 
     createColors() {
@@ -266,19 +273,16 @@ export class Game extends Base_Scene {
 
                 // use block_type cases to determine what material to draw
                 let block_type = block.get_block_type();
-                if (block_type === Brick_Type.None) {
+                if (block_type === Block_Type.None) {
                     // draw nothing
                 }
-                else if (block_type === Brick_Type.Crate) {
-                    // TODO: (tina) figure out how to draw glass material
+                else if (block_type === Block_Type.Crate) {
                     this.shapes.crate.draw(context, program_state, brick_transform, this.materials.crate);
                 }
-                else if (block_type === Brick_Type.Sand) {
-                    // TODO: brick material
+                else if (block_type === Block_Type.Sand) {
                     this.shapes.sand.draw(context, program_state, brick_transform, this.materials.sand);
                 }
-                else if (block_type === Brick_Type.Stone) {
-                    // TODO: steel material
+                else if (block_type === Block_Type.Stone) {
                     this.shapes.stone.draw(context, program_state, brick_transform, this.materials.stone);
                 }
                 else {
@@ -392,8 +396,12 @@ export class Game extends Base_Scene {
 
         // check for collision with every single block
         for (let i = 0; i < this.block_array.length; i++) {
-            if (this.sphere_to_block_collision_detection(this.ballTransform, this.block_array[i].get_block_transformation())) {
-                // TODO
+            if (this.block_array[i].get_block_type() !== Block_Type.None) {
+                if (this.sphere_to_block_collision_detection(this.ballTransform, this.block_array[i].get_coordinates())) {
+                    console.log("Collided with block " + i)
+                    this.block_array[i].block_hit();
+                    this.ballMovementY *= -1;
+                }
             }
         }
     }
