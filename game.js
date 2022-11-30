@@ -2,6 +2,7 @@ import {defs, tiny} from './examples/common.js';
 import {Texture_Scroll_X} from './textures.js';
 import {Brick} from "./brick.js";
 import {Block_Type, Block} from "./block.js";
+import {Text_Line} from "./examples/text-demo.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -25,6 +26,7 @@ export class Base_Scene extends Scene {
             'stone': new Brick("assets/stone.obj"),
             'cube': new Cube(),
             'ball': new defs.Subdivision_Sphere(4),
+            'text': new Text_Line(35),
         };
 
         // *** Materials
@@ -49,6 +51,10 @@ export class Base_Scene extends Scene {
                 color: hex_color("#000000"),
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/black-city.jpeg", "LINEAR_MIPMAP_LINEAR")
+            }),
+            text_material: new Material(new defs.Textured_Phong(1), {
+                ambient: 1, diffusivity: 0, specularity: 0,
+                texture: new Texture("assets/text.png")
             }),
         };
         // The white material and basic shader are used for drawing the outline.
@@ -113,6 +119,7 @@ export class Game extends Base_Scene {
 
         this.sphere_radius = 1;
         this.platform_radius = 7;
+        this.sphere_block_buffer = this.sphere_radius + BRICK_DIM/2;
 
         this.platformTransform = Mat4.identity();
         this.platformTransform = this.platformTransform.times(Mat4.translation(0, -20, 0));
@@ -237,13 +244,45 @@ export class Game extends Base_Scene {
             block_y = block_coordinates.y_coord;
         const sphere_x = sphere_transform[0][3];
         const sphere_y = sphere_transform[1][3];
-        const buffer = 3;
 
-        if ((Math.abs(block_x - sphere_x) < buffer) && (Math.abs(block_y - sphere_y) < buffer)) {
+        if ((Math.abs(block_x - sphere_x) < this.sphere_block_buffer) && (Math.abs(block_y - sphere_y) < this.sphere_block_buffer)) {
             return true;
         }
 
         return false;
+    }
+
+    sphere_to_block_collision_dir(sphere_transform, block_coordinates) {
+        const block_x = block_coordinates.x_coord,
+            block_y = block_coordinates.y_coord;
+        const sphere_x = sphere_transform[0][3];
+        const sphere_y = sphere_transform[1][3];
+
+        console.log("Sphere x: " + sphere_x + ". Sphere y: " + sphere_y);
+        console.log("Block x: " + block_x + ". Block y: " + block_y)
+
+        let buffer = this.sphere_block_buffer - 0.5;
+
+        // left side of brick
+        if (sphere_x + buffer <= block_x) {
+            this.ballMovementX *= -1;
+            console.log("left side")
+        }
+        // right side of brick
+        else if (sphere_x >= block_x + buffer) {
+            this.ballMovementX *= -1;
+            console.log("right side")
+        }
+        // bottom of brick
+        else if (sphere_y + buffer <= block_y) {
+            this.ballMovementY *= -1;
+            console.log("bottom")
+        }
+        // top of brick
+        else {
+            this.ballMovementY *= -1;
+            console.log("top")
+        }
     }
 
     createColors() {
@@ -301,10 +340,6 @@ export class Game extends Base_Scene {
         const green = hex_color("#90EE90");
         const yellow = hex_color("#FFFF00");
         const turquoise = hex_color("#50C5B7");
-
-        if (!this.gameOver) {
-            this.score++;
-        }
 
         // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
         
@@ -400,9 +435,17 @@ export class Game extends Base_Scene {
                 if (this.sphere_to_block_collision_detection(this.ballTransform, this.block_array[i].get_coordinates())) {
                     console.log("Collided with block " + i)
                     this.block_array[i].block_hit();
-                    this.ballMovementY *= -1;
+                    this.sphere_to_block_collision_dir(this.ballTransform, this.block_array[i].get_coordinates());
+                    this.score++;
                 }
             }
         }
+
+        // draw the score
+        let score_text = "Score: " + this.score;
+        let score_transform = Mat4.identity().times(Mat4.translation(30, -20, 0));
+        console.log(score_text)
+        this.shapes.text.set_string(score_text, context.context);
+        this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
     }
 }

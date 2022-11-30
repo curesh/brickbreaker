@@ -7,6 +7,7 @@ import {Many_Lights_Demo} from "./examples/many-lights-demo.js"
 import {Obj_File_Demo} from "./examples/obj-file-demo.js"
 
 import {Game, Base_Scene} from "./game.js"
+import {Text_Demo} from "./examples/text-demo.js";
 // Pull these names into this module's scope for convenience:
 const {
     Vector, Vector3, vec, vec3, vec4, color, Matrix, Mat4, Light, Shape, Material, Shader, Texture, Scene,
@@ -24,7 +25,7 @@ const {
 const Minimal_Webgl_Demo = defs.Minimal_Webgl_Demo;
 
 Object.assign(defs,
-            {Transforms_Sandbox}, {Game}, {Scene_To_Texture_Demo}, {Surfaces_Demo}, {Many_Lights_Demo}, {Obj_File_Demo}, {Base_Scene});
+            {Transforms_Sandbox}, {Game}, {Scene_To_Texture_Demo}, {Surfaces_Demo}, {Many_Lights_Demo}, {Obj_File_Demo}, {Base_Scene}, {Text_Demo});
 
 // ******************** End extra step
 
