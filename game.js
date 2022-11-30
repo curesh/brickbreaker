@@ -106,6 +106,12 @@ export class Game extends Base_Scene {
     }
 
     init() {
+        this.reset()
+        this.score = 0;
+        this.lives = 3;
+    }
+
+    reset() {
         this.platformMoveLeft = false;
         this.platformMoveRight = false;
 
@@ -150,10 +156,6 @@ export class Game extends Base_Scene {
         this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 2));
 
         this.gameOver = false;
-        this.score = 0;
-        this.lives = 3;
-
-        this.colors = this.createColors();
 
         this.block_array = [];
         for (let i = 0; i < BRICK_COUNT; i++) {
@@ -179,14 +181,6 @@ export class Game extends Base_Scene {
             }
         }, '#6E6460', () => this.platformMoveRight = false);
         this.key_triggered_button("Reset", ["r"], () => this.init());
-    }
-
-    draw_box(context, program_state, model_transform) {
-        // TODO:  Helper function for requirement 3 (see hint).
-        //        This should make changes to the model_transform matrix, draw the next box, and return the newest model_transform.
-        // Hint:  You can add more parameters for this function, like the desired color, index of the box, etc.
-
-        return model_transform;
     }
 
     // TODO (david): make this collision detection algorithm more refined (treats the balls as cubes essentially)
@@ -292,16 +286,10 @@ export class Game extends Base_Scene {
         }
     }
 
-    createColors() {
-        let colors = [];
-        let colore = color(Math.random(), Math.random(), Math.random(), 1.0);
-        for(let i = 0; i  < 29; i++) {
-            while(colors.includes(colore)) {
-                colore = color(Math.random(), Math.random(), Math.random(), 1.0);
-            }
-            colors.push(colore);
-        }
-        return colors
+    sphere_below_platform(sphere_transform) {
+        const sphere_y = sphere_transform[1][3];
+
+        return sphere_y < -20;
     }
 
     generate_bricks(context, program_state) {
@@ -347,6 +335,10 @@ export class Game extends Base_Scene {
         const green = hex_color("#90EE90");
         const yellow = hex_color("#FFFF00");
         const turquoise = hex_color("#50C5B7");
+
+        if (this.lives <= 0) {
+            this.gameOver = true;
+        }
 
         // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
         
@@ -446,6 +438,12 @@ export class Game extends Base_Scene {
                     this.score++;
                 }
             }
+        }
+
+        // check for ball below platform
+        if (this.sphere_below_platform(this.ballTransform)) {
+            this.lives--;
+            this.reset();
         }
 
         // draw the score
