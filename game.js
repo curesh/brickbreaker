@@ -3,6 +3,7 @@ import {Texture_Scroll_X} from './textures.js';
 import {Brick} from "./brick.js";
 import {Block_Type, Block} from "./block.js";
 import {Text_Line} from "./examples/text-demo.js";
+import {Shape_From_File} from "./examples/obj-file-demo.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -27,6 +28,7 @@ export class Base_Scene extends Scene {
             'cube': new Cube(),
             'ball': new defs.Subdivision_Sphere(4),
             'text': new Text_Line(35),
+            'heart': new Shape_From_File("assets/heart.obj")
         };
 
         // *** Materials
@@ -56,6 +58,10 @@ export class Base_Scene extends Scene {
                 ambient: 1, diffusivity: 0, specularity: 0,
                 texture: new Texture("assets/text.png")
             }),
+            heart_texture: new Material(new defs.Phong_Shader(), {
+                ambient: 1, diffusivity: 1, specularity: 1,
+                color: hex_color("#FF0000")
+            })
         };
         // The white material and basic shader are used for drawing the outline.
         this.white = new Material(new defs.Basic_Shader());
@@ -100,6 +106,12 @@ export class Game extends Base_Scene {
     }
 
     init() {
+        this.reset()
+        this.score = 0;
+        this.lives = 3;
+    }
+
+    reset() {
         this.platformMoveLeft = false;
         this.platformMoveRight = false;
 
@@ -144,9 +156,6 @@ export class Game extends Base_Scene {
         this.rightBorderTransform = this.rightBorderTransform.times(Mat4.scale(0.1, this.sideBorderLength, 2));
 
         this.gameOver = false;
-        this.score = 0;
-
-        this.colors = this.createColors();
 
         this.block_array = [];
         for (let i = 0; i < BRICK_COUNT; i++) {
@@ -172,14 +181,6 @@ export class Game extends Base_Scene {
             }
         }, '#6E6460', () => this.platformMoveRight = false);
         this.key_triggered_button("Reset", ["r"], () => this.init());
-    }
-
-    draw_box(context, program_state, model_transform) {
-        // TODO:  Helper function for requirement 3 (see hint).
-        //        This should make changes to the model_transform matrix, draw the next box, and return the newest model_transform.
-        // Hint:  You can add more parameters for this function, like the desired color, index of the box, etc.
-
-        return model_transform;
     }
 
     // TODO (david): make this collision detection algorithm more refined (treats the balls as cubes essentially)
@@ -285,16 +286,10 @@ export class Game extends Base_Scene {
         }
     }
 
-    createColors() {
-        let colors = [];
-        let colore = color(Math.random(), Math.random(), Math.random(), 1.0);
-        for(let i = 0; i  < 29; i++) {
-            while(colors.includes(colore)) {
-                colore = color(Math.random(), Math.random(), Math.random(), 1.0);
-            }
-            colors.push(colore);
-        }
-        return colors
+    sphere_below_platform(sphere_transform) {
+        const sphere_y = sphere_transform[1][3];
+
+        return sphere_y < -20;
     }
 
     generate_bricks(context, program_state) {
@@ -340,6 +335,10 @@ export class Game extends Base_Scene {
         const green = hex_color("#90EE90");
         const yellow = hex_color("#FFFF00");
         const turquoise = hex_color("#50C5B7");
+
+        if (this.lives <= 0) {
+            this.gameOver = true;
+        }
 
         // alright so the game's coordinates are currently from -20 to 20 on the x direction and -10 to 0 in the y
         
@@ -441,11 +440,32 @@ export class Game extends Base_Scene {
             }
         }
 
+        // check for ball below platform
+        if (this.sphere_below_platform(this.ballTransform)) {
+            this.lives--;
+            this.reset();
+        }
+
         // draw the score
         let score_text = "Score: " + this.score;
-        let score_transform = Mat4.identity().times(Mat4.translation(30, -20, 0));
+        let score_transform = Mat4.identity().times(Mat4.translation(33, -20, 0));
         console.log(score_text)
         this.shapes.text.set_string(score_text, context.context);
         this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
+
+        // draw lives
+        let lives_text = "Lives: " + this.lives;
+        let lives_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        this.shapes.text.set_string(lives_text, context.context);
+        this.shapes.text.draw(context, program_state, lives_transform, this.materials.text_material);
+
+        // draw heart
+        let heart_transform = Mat4.identity().times(Mat4.translation(-30, -19.5, 0));
+        for (let i = 0; i < this.lives; i++) {
+            heart_transform = heart_transform.times(Mat4.rotation(3*Math.PI/2,1,0,0))
+            this.shapes.heart.draw(context, program_state, heart_transform, this.materials.heart_texture);
+            heart_transform = heart_transform.times(Mat4.translation(3, 0, 0)
+                .times(Mat4.rotation(-3*Math.PI/2,1,0,0)));
+        }
     }
 }
