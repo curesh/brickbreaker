@@ -2,7 +2,7 @@ import {defs, tiny} from './examples/common.js';
 import {Texture_Scroll_X} from './textures.js';
 import {Brick} from "./brick.js";
 import {Block_Type, Block} from "./block.js";
-import {Text_Line} from "./text.js";
+import {Text_Line} from "./examples/text-demo.js";
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -52,7 +52,7 @@ export class Base_Scene extends Scene {
                 ambient: 1, diffusivity: 0.1, specularity: 0.1,
                 texture: new Texture("assets/black-city.jpeg", "LINEAR_MIPMAP_LINEAR")
             }),
-            text_image: new Material(new defs.Textured_Phong(1), {
+            text_material: new Material(new defs.Textured_Phong(1), {
                 ambient: 1, diffusivity: 0, specularity: 0,
                 texture: new Texture("assets/text.png")
             }),
@@ -443,9 +443,9 @@ export class Game extends Base_Scene {
 
         // draw the score
         let score_text = "Score: " + this.score;
-        let score_transform = Mat4.identity().times(Mat4.translation(0, 0, 0));
+        let score_transform = Mat4.identity().times(Mat4.translation(30, -20, 0));
         console.log(score_text)
         this.shapes.text.set_string(score_text, context.context);
-        // this.shapes.text.draw(context, program_state, score_transform, this.text_image);
+        this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
     }
 }

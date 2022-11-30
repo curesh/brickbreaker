@@ -73,7 +73,8 @@ export class Text_Demo extends Scene {             // **Text_Demo** is a scene w
         program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 500);
 
         const t = program_state.animation_time / 1000;
-        const funny_orbit = Mat4.rotation(Math.PI / 4 * t, Math.cos(t), Math.sin(t), .7 * Math.cos(t));
+        const funny_orbit = Mat4.identity()
+        // const funny_orbit = Mat4.rotation(Math.PI / 4 * t, Math.cos(t), Math.sin(t), .7 * Math.cos(t));
         this.shapes.cube.draw(context, program_state, funny_orbit, this.grey);
 
 
@@ -93,6 +94,7 @@ export class Text_Demo extends Scene {             // **Text_Demo** is a scene w
                     this.shapes.text.set_string(line, context.context);
                     this.shapes.text.draw(context, program_state, funny_orbit.times(cube_side)
                         .times(Mat4.scale(.03, .03, .03)), this.text_image);
+                    console.log(line)
                     // Move our basis down a line.
                     cube_side.post_multiply(Mat4.translation(0, -.06, 0));
                 }
