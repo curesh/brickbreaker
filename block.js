@@ -15,8 +15,8 @@ export class Block {
 
     constructor() {
         this.block_type = Math.floor(Math.random() * 4);
-        this.x_coord = 0;
-        this.y_coord = 0;
+        this.x_coord = null;
+        this.y_coord = null;
         // this.block_transform = 2;
     }
 
@@ -44,11 +44,8 @@ export class Block {
         this.x_coord = ORIGIN[0] + j * (BRICK_DIM + delta_x)
         this.y_coord = ORIGIN[1] - i * (BRICK_DIM + delta_y)
         let block_transform = Mat4.identity().times(Mat4.translation(ORIGIN[0] + j * (BRICK_DIM + delta_x), ORIGIN[1] - i * (BRICK_DIM + delta_y), 0)).times(Mat4.scale(BRICK_DIM/2,BRICK_DIM/2, BRICK_DIM/2));
-        if (this.block_type == Block_Type.Crate) {
+        if (this.block_type == Block_Type.Crate || this.block_type == Block_Type.None) {
             return block_transform.times(Mat4.scale(2.5,2.5,2.5));
-        }
-        if (this.block_type == Block_Type.None) {
-            return block_transform;
         }
 
         return block_transform.times(Mat4.scale(5, 10, 2));

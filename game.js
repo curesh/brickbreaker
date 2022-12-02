@@ -110,6 +110,7 @@ export class Game extends Base_Scene {
         this.reset()
         this.score = 0;
         this.lives = 3;
+        this.gameStarted = false;
     }
 
     reset() {
@@ -171,10 +172,7 @@ export class Game extends Base_Scene {
         this.block_mask = [];
         for (let i = 0; i < BRICK_COUNT; i++) {
             this.block_mask.push(0);
-        }
-
-        this.gameStarted = false;
-        
+        }        
     }
 
     // we'll use x to move left and c to move right
@@ -262,7 +260,8 @@ export class Game extends Base_Scene {
             block_y = block_coordinates.y_coord;
         const sphere_x = sphere_transform[0][3];
         const sphere_y = sphere_transform[1][3];
-
+        if (block_x == null || block_y == null)
+            return false;
         if ((Math.abs(block_x - sphere_x) < this.sphere_block_buffer) && (Math.abs(block_y - sphere_y) < this.sphere_block_buffer)) {
             return true;
         }
@@ -318,6 +317,9 @@ export class Game extends Base_Scene {
         for (let i = 0; i < BRICK_ROWS; i += 1) {
 
             for (let j = 0; j < BRICK_COLUMNS; j += 1) {
+                if (i > BRICK_ROWS_USED || !this.gameStarted) {
+                    continue;
+                }
                 const block = this.block_array[counter];
                 block_transform = block.set_block_transformation(i, j);
                 // if(block_transform)
@@ -326,9 +328,7 @@ export class Game extends Base_Scene {
                 // console.log(block_transform);
                 this.block_array[counter] = block;
                 // console.log()
-                if (i > BRICK_ROWS_USED || !this.gameStarted) {
-                    continue;
-                }
+
                 // use block_type cases to determine what material to draw
                 let block_type = block.get_block_type();
                 if (block_type === Block_Type.None) {
@@ -356,7 +356,6 @@ export class Game extends Base_Scene {
     }
 
     displayGame(context, program_state) {
-        this.generate_bricks(context, program_state);
 
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
@@ -619,7 +618,8 @@ export class Game extends Base_Scene {
 
     display(context, program_state) {
         super.display(context, program_state);
-        
+        this.generate_bricks(context, program_state);
+
         if (this.gameStarted){
             this.displayGame(context, program_state);
         } else {
