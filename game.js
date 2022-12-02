@@ -102,6 +102,8 @@ export class Game extends Base_Scene {
 
     constructor() {
         super();
+        // one global high score
+        this.highScore = 0;
 
         this.init();
     }
@@ -177,8 +179,8 @@ export class Game extends Base_Scene {
 
     // we'll use x to move left and c to move right
     make_control_panel() {
-        this.control_panel.innerHTML += "Score: ";
-        this.live_string(box => box.textContent = this.score);
+        this.control_panel.innerHTML += "High Score: ";
+        this.live_string(box => box.textContent = this.highScore);
         this.new_line();
         this.new_line();
 
@@ -372,6 +374,7 @@ export class Game extends Base_Scene {
         const turquoise = hex_color("#50C5B7");
 
         if (this.lives <= 0) {
+            this.highScore = Math.max(this.score, this.highScore);
             this.gameOver = true;
         }
 
@@ -428,7 +431,7 @@ export class Game extends Base_Scene {
             const platform_center = this.platformTransform[0][3];
 
             // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
-            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .5, Math.min(this.platform_radius - .5, this.ballX - platform_center));
+            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .8, Math.min(this.platform_radius - .8, this.ballX - platform_center));
 
             // console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
 
@@ -486,6 +489,11 @@ export class Game extends Base_Scene {
         console.log(score_text)
         this.shapes.text.set_string(score_text, context.context);
         this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
+
+        let high_score_text = "High Score: " + this.highScore;
+        let high_score_transform = Mat4.identity().times(Mat4.translation(10, -22, 0));
+        this.shapes.text.set_string(high_score_text, context.context);
+        this.shapes.text.draw(context, program_state, high_score_transform, this.materials.text_material);
 
         // draw lives
         let lives_text = "Lives: " + this.lives;
@@ -683,7 +691,7 @@ export class Game extends Base_Scene {
 
         // draw start text
         let start_text = "Press (r) to start game";
-        let start_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        let start_transform = Mat4.identity().times(Mat4.translation(-45, -22, 0));
         this.shapes.text.set_string(start_text, context.context);
         this.shapes.text.draw(context, program_state, start_transform, this.materials.text_material);
 
@@ -776,16 +784,21 @@ export class Game extends Base_Scene {
 
         // draw start text
         let start_text = "Press (r) to try again";
-        let start_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        let start_transform = Mat4.identity().times(Mat4.translation(-45, -22, 0));
         this.shapes.text.set_string(start_text, context.context);
         this.shapes.text.draw(context, program_state, start_transform, this.materials.text_material);
 
         // draw the score
         let score_text = "Score: " + this.score;
-        let score_transform = Mat4.identity().times(Mat4.translation(33, -20, 0));
+        let score_transform = Mat4.identity().times(Mat4.translation(33, -22, 0));
         console.log(score_text)
         this.shapes.text.set_string(score_text, context.context);
         this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
+
+        let high_score_text = "High Score: " + this.highScore;
+        let high_score_transform = Mat4.identity().times(Mat4.translation(10, -22, 0));
+        this.shapes.text.set_string(high_score_text, context.context);
+        this.shapes.text.draw(context, program_state, high_score_transform, this.materials.text_material);
 
         this.generate_bricks_start(context, program_state);
     }
