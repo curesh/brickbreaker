@@ -516,6 +516,9 @@ export class Game extends Base_Scene {
 
 
     generate_bricks_start(context, program_state) {
+        // time since starting given in seconds
+        const t = this.t = program_state.animation_time / 1000;
+        const dt = program_state.animation_delta_time / 1000;
         let start_x = ORIGIN[0];
         let start_y = ORIGIN[1];
         let counter = 0;
@@ -526,6 +529,7 @@ export class Game extends Base_Scene {
 
                 const block = this.sblock_array[counter];
                 block_transform = block.set_block_transformation(i, j);
+                block_transform = block_transform.times(Mat4.rotation(t,0,1,0));
                 this.sblock_array[counter] = block;
                 block.set_block_type(Block_Type.Crate);
                 if (this.block_mask[counter] === 1){

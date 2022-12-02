@@ -48,7 +48,7 @@ export class Block {
             return block_transform.times(Mat4.scale(2.5,2.5,2.5));
         }
 
-        return block_transform.times(Mat4.scale(5, 10, 2));
+        return block_transform.times(Mat4.scale(5, 10, 1));
     }
 
     block_hit() {
