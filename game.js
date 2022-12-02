@@ -111,7 +111,7 @@ export class Game extends Base_Scene {
     init() {
         this.reset()
         this.score = 0;
-        this.lives = 1;
+        this.lives = 3;
         this.gameStarted = false;
         this.block_array = [];
         for (let i = 0; i < BRICK_COUNT; i++) {
