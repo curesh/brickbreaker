@@ -43,11 +43,11 @@ export class Base_Scene extends Scene {
             }),
             sand : new Material(new defs.Fake_Bump_Map(1), {
                 color: hex_color("#C2B280"),
-                ambient: .5, diffusivity: .5, specularity: 0, texture: new Texture("assets/sand.jpg")
+                ambient: 0.2, diffusivity: .8, specularity: 0, texture: new Texture("assets/sand_nmap.jpg")
             }),
             stone : new Material(new defs.Fake_Bump_Map(1), {
-                color: color(.5, .5, .5, 1),
-                ambient: .3, diffusivity: .5, specularity: .5, texture: new Texture("assets/stone.jpg")
+                color: hex_color("#5A5A5A"),
+                ambient: 0.2, diffusivity: .8, specularity: .5, texture: new Texture("assets/stone_nmap.jpg")
             }),
             bg: new Material(new Texture_Scroll_X(), {
                 color: hex_color("#000000"),
