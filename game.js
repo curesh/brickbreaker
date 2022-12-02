@@ -109,6 +109,7 @@ export class Game extends Base_Scene {
     }
 
     init() {
+        this.stopTimestamp = 0;
         this.reset()
         this.score = 0;
         this.lives = 3;
@@ -415,9 +416,9 @@ export class Game extends Base_Scene {
         // for changing the ball angle after colliding: just use the center of the ball's location for x
         // once we've confirmed that there's a collision, we send the ball flying at an offset depending on distance from center
 
-        // accounts for a delay in dt at the beginning where dt is a large value
-
-        this.ballTransform = this.ballTransform.times(Mat4.translation(this.movementSpeed * this.ballMovementX, this.movementSpeed * this.ballMovementY, 0));
+        if (t > this.stopTimestamp + 2 && !this.gameOver) {
+            this.ballTransform = this.ballTransform.times(Mat4.translation(this.movementSpeed * this.ballMovementX, this.movementSpeed * this.ballMovementY, 0));
+        }
         this.shapes.ball.draw(context, program_state, this.ballTransform, this.materials.plastic.override({color:blue}));
         this.shapes.cube.draw(context, program_state, this.platformTransform, this.materials.plastic.override({color:green}));
 
@@ -481,6 +482,7 @@ export class Game extends Base_Scene {
         if (this.sphere_below_platform(this.ballTransform)) {
             this.lives--;
             this.reset();
+            this.stopTimestamp = t;
         }
 
         // draw the score
