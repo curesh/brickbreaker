@@ -109,8 +109,17 @@ export class Game extends Base_Scene {
     init() {
         this.reset()
         this.score = 0;
-        this.lives = 3;
+        this.lives = 1;
         this.gameStarted = false;
+        this.block_array = [];
+        for (let i = 0; i < BRICK_COUNT; i++) {
+            this.block_array.push(new Block());
+        }
+
+        this.sblock_array = [];
+        for (let i = 0; i < BRICK_COUNT; i++) {
+            this.sblock_array.push(new Block());
+        }
     }
 
     reset() {
@@ -159,15 +168,6 @@ export class Game extends Base_Scene {
 
         this.gameOver = false;
 
-        this.block_array = [];
-        for (let i = 0; i < BRICK_COUNT; i++) {
-            this.block_array.push(new Block());
-        }
-
-        this.sblock_array = [];
-        for (let i = 0; i < BRICK_COUNT; i++) {
-            this.sblock_array.push(new Block());
-        }
 
         this.block_mask = [];
         for (let i = 0; i < BRICK_COUNT; i++) {
@@ -195,6 +195,12 @@ export class Game extends Base_Scene {
         this.key_triggered_button("Reset", ["r"], () => {
             this.init();
             this.gameStarted = true;
+        });
+        this.key_triggered_button("Cheat", ["p"], () => {
+            for (let i = 0; i < this.block_array.length; i++) {
+                this.block_array[i].block_type = Block_Type.None;
+            }
+            this.lives = 0;
         });
     }
 
@@ -356,6 +362,7 @@ export class Game extends Base_Scene {
     }
 
     displayGame(context, program_state) {
+        this.generate_bricks(context, program_state);
 
         const blue = hex_color("#1a9ffa");
         const green = hex_color("#90EE90");
@@ -373,8 +380,8 @@ export class Game extends Base_Scene {
         this.shapes.cube.draw(context, program_state, this.rightBorderTransform, this.materials.plastic.override({color: turquoise}));
 
         let background_transform = Mat4.identity();
-        background_transform = background_transform.times(Mat4.translation(0,5.5,-2));
-        background_transform = background_transform.times(Mat4.scale(50,28,0.1));
+        background_transform = background_transform.times(Mat4.translation(0,5,-2));
+        background_transform = background_transform.times(Mat4.scale(50,45,0.1));
 
         this.shapes.cube.draw(context, program_state, background_transform, this.materials.bg);
 
@@ -616,17 +623,175 @@ export class Game extends Base_Scene {
         this.generate_bricks_start(context, program_state);
     }
 
+    displayStart(context, program_state) {
+        let xOffset = 0;
+        let yOffset = 0;
+        this.drawGridCubes(0,0,5,3); //B
+        this.setBlockMask(1,1,0);
+        this.setBlockMask(3,1,0);
+
+        yOffset = 4;
+        this.drawGridCubes(xOffset,yOffset,5,3); //R
+        this.setBlockMask(xOffset+1,yOffset+1,0);
+        this.setBlockMask(xOffset+3,yOffset+2,0);
+        this.setBlockMask(xOffset+4,yOffset+1,0);
+
+        yOffset = 8;
+        this.drawLineCubes(xOffset,yOffset,0,3); //I
+        this.drawLineCubes(xOffset+4,yOffset,0,3);
+        this.drawLineCubes(xOffset,yOffset+1,1,5);
+
+        yOffset = 12;
+        this.drawLineCubes(xOffset,yOffset,0,3); //C
+        this.drawLineCubes(xOffset+4,yOffset,0,3);
+        this.drawLineCubes(xOffset,yOffset,1,5);
+
+        yOffset = 16;
+        this.drawLineCubes(xOffset,yOffset,1,5); //K
+        this.setBlockMask(xOffset,yOffset+2,1);
+        this.setBlockMask(xOffset+1,yOffset+1,1);
+        this.setBlockMask(xOffset+3,yOffset+1,1);
+        this.setBlockMask(xOffset+4,yOffset+2,1);
+
+
+        yOffset = 20;
+        this.drawLineCubes(xOffset,yOffset,0,3); //E
+        this.drawLineCubes(xOffset+2,yOffset,0,3);
+        this.drawLineCubes(xOffset+4,yOffset,0,3);
+        this.drawLineCubes(xOffset,yOffset,1,5);
+
+        yOffset = 24;
+        this.drawGridCubes(xOffset,yOffset,5,3); //D
+        this.setBlockMask(xOffset,yOffset+2,0);
+        this.setBlockMask(xOffset+1,yOffset+1,0);
+        this.setBlockMask(xOffset+2,yOffset+1,0);
+        this.setBlockMask(xOffset+3,yOffset+1,0);
+        this.setBlockMask(xOffset+4,yOffset+2,0);
+
+        xOffset = 7;
+        yOffset = 10;
+        this.drawLineCubes(xOffset,yOffset,1,5); //U
+        this.drawLineCubes(xOffset,yOffset+2,1,5);
+        this.setBlockMask(xOffset+4,yOffset+1,1);
+
+        yOffset = 14;
+        this.drawLineCubes(xOffset,yOffset,1,5); //P
+        this.drawGridCubes(xOffset,yOffset,3,3);
+        this.setBlockMask(xOffset+1,yOffset+1,0);
+
+        // draw start text
+        let start_text = "Press (r) to start game";
+        let start_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        this.shapes.text.set_string(start_text, context.context);
+        this.shapes.text.draw(context, program_state, start_transform, this.materials.text_material);
+
+
+        this.generate_bricks_start(context, program_state);
+    }
+
+    checkWin() {
+        for (let i = 0; i < this.block_array.length; i++) {
+            if (this.block_array[i].get_block_type() != Block_Type.None)
+                return false;
+        }
+        return true;
+    }
+    displayEnd(context, program_state) {
+        
+        let xOffset = 0;
+        let yOffset = 8;
+        this.drawGridCubes(xOffset,yOffset,3,3); //Y
+        this.drawLineCubes(xOffset,yOffset+1,1,5);
+        this.setBlockMask(xOffset,yOffset+1,0);
+        this.setBlockMask(xOffset+1,yOffset+1,0);
+
+        yOffset += 4;
+        this.drawGridCubes(xOffset,yOffset,5,3); //O
+        this.setBlockMask(xOffset+1,yOffset+1,0);
+        this.setBlockMask(xOffset+2,yOffset+1,0);
+        this.setBlockMask(xOffset+3,yOffset+1,0);
+
+        yOffset += 4;
+        this.drawLineCubes(xOffset,yOffset,1,5); //U
+        this.drawLineCubes(xOffset,yOffset+2,1,5);
+        this.setBlockMask(xOffset+4,yOffset+1,1);
+
+        if (this.checkWin()) {
+            xOffset += 7;
+            yOffset = 6;
+            this.drawLineCubes(xOffset,yOffset,1,5); //W
+            this.drawLineCubes(xOffset,yOffset+3,1,5);
+            this.drawLineCubes(xOffset+3,yOffset,0,3); 
+
+
+            yOffset += 5;
+            this.drawGridCubes(xOffset,yOffset,5,3); //O
+            this.setBlockMask(xOffset+1,yOffset+1,0);
+            this.setBlockMask(xOffset+2,yOffset+1,0);
+            this.setBlockMask(xOffset+3,yOffset+1,0);
+    
+    
+            yOffset += 4;
+            this.drawLineCubes(xOffset,yOffset,1,5); //W
+            this.drawLineCubes(xOffset,yOffset+3,1,5);
+            this.drawGridCubes(xOffset+1,yOffset+1,3,2);
+            this.setBlockMask(xOffset+3,yOffset+1,0);
+            this.setBlockMask(xOffset+1,yOffset+2,0);
+
+    
+            yOffset += 6;
+            this.setBlockMask(xOffset+1,yOffset,1); // :)
+            this.setBlockMask(xOffset+1,yOffset+3,1);
+            this.drawGridCubes(xOffset+3, yOffset, 2,4);
+            this.setBlockMask(xOffset+3,yOffset+1,0);
+            this.setBlockMask(xOffset+3,yOffset+2,0);
+
+    
+        } else {
+            xOffset += 7;
+            yOffset = 7;
+            this.drawLineCubes(xOffset,yOffset,1,5);
+            this.drawLineCubes(xOffset+4,yOffset,0,3); //L
+    
+            yOffset += 4;
+            this.drawGridCubes(xOffset,yOffset,5,3); //O
+            this.setBlockMask(xOffset+1,yOffset+1,0);
+            this.setBlockMask(xOffset+2,yOffset+1,0);
+            this.setBlockMask(xOffset+3,yOffset+1,0);
+    
+    
+            yOffset += 4;
+            this.drawLineCubes(xOffset,yOffset,0,3); //S
+            this.drawLineCubes(xOffset+2,yOffset,0,3);
+            this.drawLineCubes(xOffset+4,yOffset,0,3);
+            this.setBlockMask(xOffset+1,yOffset,1);
+            this.setBlockMask(xOffset+3,yOffset+2,1);
+    
+            yOffset += 4;
+            this.drawLineCubes(xOffset,yOffset,0,3); //T
+            this.drawLineCubes(xOffset,yOffset+1,1,5);    
+        }
+
+        // draw start text
+        let start_text = "Press (r) to try again";
+        let start_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        this.shapes.text.set_string(start_text, context.context);
+        this.shapes.text.draw(context, program_state, start_transform, this.materials.text_material);
+
+
+        this.generate_bricks_start(context, program_state);
+    }
+
     display(context, program_state) {
         super.display(context, program_state);
-        this.generate_bricks(context, program_state);
 
-        if (this.gameStarted){
+        if (this.gameStarted && !this.gameOver){
             this.displayGame(context, program_state);
-        } else {
+        } else if (this.gameOver) {
+            this.displayEnd(context, program_state);
+        }
+        else {
             this.displayStart(context, program_state);
         }
-        // this.make_control_panel();
-
-
     }
 }
