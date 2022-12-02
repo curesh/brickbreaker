@@ -394,7 +394,7 @@ export class Game extends Base_Scene {
             const platform_center = this.platformTransform[0][3];
 
             // constrain the values between 1.8 and -1.8 to avoid having movement that only goes in the x-direction
-            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .2, Math.min(this.platform_radius - .2, this.ballX - platform_center));
+            const sphere_dist_from_platform_center = Math.max(-this.platform_radius + .5, Math.min(this.platform_radius - .5, this.ballX - platform_center));
 
             // console.log("Sphere dist from center: ", sphere_dist_from_platform_center);
 
@@ -448,19 +448,19 @@ export class Game extends Base_Scene {
 
         // draw the score
         let score_text = "Score: " + this.score;
-        let score_transform = Mat4.identity().times(Mat4.translation(33, -20, 0));
+        let score_transform = Mat4.identity().times(Mat4.translation(33, -22, 0));
         console.log(score_text)
         this.shapes.text.set_string(score_text, context.context);
         this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
 
         // draw lives
         let lives_text = "Lives: " + this.lives;
-        let lives_transform = Mat4.identity().times(Mat4.translation(-45, -20, 0));
+        let lives_transform = Mat4.identity().times(Mat4.translation(-45, -22, 0));
         this.shapes.text.set_string(lives_text, context.context);
         this.shapes.text.draw(context, program_state, lives_transform, this.materials.text_material);
 
         // draw heart
-        let heart_transform = Mat4.identity().times(Mat4.translation(-30, -19.5, 0));
+        let heart_transform = Mat4.identity().times(Mat4.translation(-30, -21.5, 0));
         for (let i = 0; i < this.lives; i++) {
             heart_transform = heart_transform.times(Mat4.rotation(3*Math.PI/2,1,0,0))
             this.shapes.heart.draw(context, program_state, heart_transform, this.materials.heart_texture);
