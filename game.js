@@ -778,6 +778,12 @@ export class Game extends Base_Scene {
         this.shapes.text.set_string(start_text, context.context);
         this.shapes.text.draw(context, program_state, start_transform, this.materials.text_material);
 
+        // draw the score
+        let score_text = "Score: " + this.score;
+        let score_transform = Mat4.identity().times(Mat4.translation(33, -20, 0));
+        console.log(score_text)
+        this.shapes.text.set_string(score_text, context.context);
+        this.shapes.text.draw(context, program_state, score_transform, this.materials.text_material);
 
         this.generate_bricks_start(context, program_state);
     }
