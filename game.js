@@ -197,10 +197,12 @@ export class Game extends Base_Scene {
             this.gameStarted = true;
         });
         this.key_triggered_button("Cheat", ["p"], () => {
-            for (let i = 0; i < this.block_array.length; i++) {
-                this.block_array[i].block_type = Block_Type.None;
+            if (!this.gameOver) {
+                for (let i = 0; i < this.block_array.length; i++) {
+                    this.block_array[i].block_type = Block_Type.None;
+                }
+                this.lives = 0;
             }
-            this.lives = 0;
         });
     }
 
